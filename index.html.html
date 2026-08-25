@@ -13,7 +13,6 @@
             --fitstock-dark: #1e293b;
             --fitstock-light: #f8fafc;
             --fitstock-border: #e2e8f0;
-            --fitstock-accent: #0f172a;
         }
 
         body { 
@@ -26,7 +25,7 @@
         .fitstock-card { 
             background: #ffffff; 
             border-radius: 8px; 
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); 
             border: 1px solid var(--fitstock-border);
             padding: 18px; 
         }
@@ -75,9 +74,6 @@
             border-bottom: 1px solid var(--fitstock-border);
         }
 
-        th:first-child { border-top-left-radius: 6px; }
-        th:last-child { border-top-right-radius: 6px; }
-
         td { 
             padding: 12px; 
             border-bottom: 1px solid var(--fitstock-border); 
@@ -85,9 +81,7 @@
             background-color: #ffffff;
         }
 
-        tr:hover td {
-            background-color: #f8fafc;
-        }
+        tr:hover td { background-color: #f8fafc; }
 
         .btn-fitstock { 
             background-color: var(--fitstock-green); 
@@ -99,19 +93,10 @@
             font-weight: 600; 
             cursor: pointer; 
             transition: all 0.2s ease; 
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        .btn-fitstock:hover { 
-            background-color: var(--fitstock-green-hover); 
-            transform: translateY(-1px);
-        }
-
-        .btn-fitstock:disabled { 
-            background-color: #94a3b8; 
-            cursor: not-allowed; 
-            transform: none;
-        }
+        .btn-fitstock:hover { background-color: var(--fitstock-green-hover); }
+        .btn-fitstock:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
         .loading-state { 
             text-align: center; 
@@ -126,7 +111,7 @@
 <div class="fitstock-card">
     <div class="fitstock-header">
         <div class="fitstock-title">Match de Oportunidades Fitstock</div>
-        <div id="header-info"><span class="loading-state">Carregando...</span></div>
+        <div id="header-info"><span class="loading-state">Iniciando SDK...</span></div>
     </div>
     
     <table id="tabela-empresas">
@@ -147,16 +132,30 @@
 <script>
     var currentOppId = null;
 
+    // Garante escuta universal para carregamento em Lista Relacionada
     ZOHO.embeddedApp.on("PageLoad", function(data) {
         if (data && data.EntityId) {
             currentOppId = data.EntityId;
             carregarEmpresas();
+        } else {
+            // Fallback para capturar EntityId da URL/Contexto se o evento omitir o payload
+            ZOHO.CRM.INTERACTION.getPageInfo().then(function(info) {
+                if(info && info.recordId) {
+                    currentOppId = info.recordId;
+                    carregarEmpresas();
+                } else {
+                    document.getElementById("header-info").innerHTML = "<span style='color:red;'>ID do Registro não identificado.</span>";
+                }
+            });
         }
     });
 
+    // Inicialização explícita
     ZOHO.embeddedApp.init();
 
     function carregarEmpresas() {
+        document.getElementById("header-info").innerHTML = "<span>Consultando banco...</span>";
+
         ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", { "oppId": currentOppId })
         .then(function(data) {
             var res = JSON.parse(data.details.output);
@@ -167,7 +166,7 @@
             if (res.status === "success") {
                 header.innerHTML = `<strong>Produto:</strong> ${res.produto_nome} | <span class="badge-fitstock">${res.tipo_oportunidade}</span>`;
                 
-                if (res.empresas.length > 0) {
+                if (res.empresas && res.empresas.length > 0) {
                     res.empresas.forEach(function(emp) {
                         var tr = document.createElement("tr");
                         tr.innerHTML = `
@@ -183,11 +182,14 @@
                         tbody.appendChild(tr);
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="loading-state">Nenhuma empresa encontrada com a subcategoria e Contato Certo.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="loading-state">Nenhuma empresa encontrada para esta subcategoria com Contato Certo.</td></tr>`;
                 }
             } else {
-                tbody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:#ef4444;">Erro: ${res.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:#ef4444;">Erro na Busca: ${res.message}</td></tr>`;
             }
+        }).catch(function(err) {
+            document.getElementById("header-info").innerHTML = "<span style='color:red;'>Erro na execução da Function.</span>";
+            console.error("Erro Deluge Exec:", err);
         });
     }
 
