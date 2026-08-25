@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Match de Oportunidades Fitstock</title>
-    <script src="https://live.zohocdn.com/zohocrm/v2/sdk/1.0.0/sdk.js"></script>
+    <!-- CDN OFICIAL E ATUALIZADA DO ZOHO CRM SDK -->
+    <script src="https://js.zohostatic.com/zohocrm/v2/sdk/1.0.0/sdk.js"></script>
     <style>
         :root {
             --fitstock-green: #28a745;
@@ -127,11 +128,9 @@
     var currentOppId = null;
 
     function extrairIdDaUrl() {
-        // 1. Tenta pegar dos parâmetros de busca da URL
         var params = new URLSearchParams(window.location.search);
         var id = params.get("recId") || params.get("crmEntityId") || params.get("id");
         
-        // 2. Se não achar, extrai o ID numérico da URL do Referrer (janela pai do CRM)
         if (!id && document.referrer) {
             var matches = document.referrer.match(/\/(\d{15,20})/);
             if (matches && matches[1]) {
@@ -146,24 +145,26 @@
 
         if (currentOppId) {
             carregarEmpresas();
+        } else if (typeof ZOHO !== "undefined" && ZOHO.embeddedApp) {
+            ZOHO.embeddedApp.on("PageLoad", function(data) {
+                if (data && data.EntityId) {
+                    currentOppId = data.EntityId;
+                    carregarEmpresas();
+                }
+            });
+            ZOHO.embeddedApp.init();
         } else {
-            // Tentativa via SDK caso a extração direta falhe
-            if (typeof ZOHO !== "undefined" && ZOHO.embeddedApp) {
-                ZOHO.embeddedApp.on("PageLoad", function(data) {
-                    if (data && data.EntityId) {
-                        currentOppId = data.EntityId;
-                        carregarEmpresas();
-                    }
-                });
-                ZOHO.embeddedApp.init();
-            } else {
-                document.getElementById("header-info").innerHTML = "<span style='color:#ef4444;'>ID do Registro não localizado.</span>";
-            }
+            document.getElementById("header-info").innerHTML = "<span style='color:#ef4444;'>ID do Registro não localizado.</span>";
         }
     }
 
     function carregarEmpresas() {
         document.getElementById("header-info").innerHTML = "<span>Consultando banco de dados...</span>";
+
+        if (typeof ZOHO === "undefined" || !ZOHO.CRM || !ZOHO.CRM.FUNCTIONS) {
+            document.getElementById("header-info").innerHTML = "<span style='color:#ef4444;'>SDK do CRM inacessível.</span>";
+            return;
+        }
 
         ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", { "oppId": currentOppId })
         .then(function(data) {
@@ -231,8 +232,7 @@
         });
     }
 
-    // Executa imediatamente ao carregar a página
-    window.onload = iniciar;
+    window.addEventListener("DOMContentLoaded", iniciar);
 </script>
 
 </body>
