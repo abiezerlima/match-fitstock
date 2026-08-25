@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Match de Oportunidades Fitstock</title>
-    <!-- CDN Oficial do SDK Zoho CRM -->
+    <!-- SDK Oficial Zoho CRM -->
     <script src="https://live.zohocdn.com/zohocrm/v2/sdk/1.0.0/sdk.js"></script>
     <style>
         :root {
@@ -106,7 +106,7 @@
 <div class="fitstock-card">
     <div class="fitstock-header">
         <div class="fitstock-title">Match de Oportunidades Fitstock</div>
-        <div id="header-info"><span class="loading-state">Conectando ao CRM...</span></div>
+        <div id="header-info"><span class="loading-state">Iniciando busca...</span></div>
     </div>
     
     <table id="tabela-empresas">
@@ -127,40 +127,42 @@
 <script>
     var currentOppId = null;
 
-    function inicializarWidget() {
-        ZOHO.embeddedApp.on("PageLoad", function(data) {
-            if (data && data.EntityId) {
-                currentOppId = data.EntityId;
+    function capturarIdEBuscar() {
+        ZOHO.CRM.INTERACTION.getPageInfo().then(function(info) {
+            if (info && info.recordId) {
+                currentOppId = info.recordId;
                 carregarEmpresas();
             } else {
-                ZOHO.CRM.INTERACTION.getPageInfo().then(function(info) {
-                    if (info && info.recordId) {
-                        currentOppId = info.recordId;
-                        carregarEmpresas();
-                    }
-                });
+                // Fallback via parâmetros passados na URL do iFrame pelo CRM
+                var params = new URLSearchParams(window.location.search);
+                currentOppId = params.get("recId") || params.get("crmEntityId") || params.get("id");
+                if (currentOppId) {
+                    carregarEmpresas();
+                } else {
+                    document.getElementById("header-info").innerHTML = "<span style='color:#ef4444;'>ID da Oportunidade não localizado.</span>";
+                }
             }
         });
-
-        ZOHO.embeddedApp.init();
     }
 
-    // Tenta inicialização síncrona ou aguarda o carregamento do script
-    if (typeof ZOHO !== "undefined" && ZOHO.embeddedApp) {
-        inicializarWidget();
-    } else {
-        document.addEventListener("DOMContentLoaded", function() {
-            var checkInterval = setInterval(function() {
-                if (typeof ZOHO !== "undefined" && ZOHO.embeddedApp) {
-                    clearInterval(checkInterval);
-                    inicializarWidget();
-                }
-            }, 100);
-        });
-    }
+    ZOHO.embeddedApp.on("PageLoad", function(data) {
+        if (data && data.EntityId) {
+            currentOppId = data.EntityId;
+            carregarEmpresas();
+        } else {
+            capturarIdEBuscar();
+        }
+    });
+
+    ZOHO.embeddedApp.init().then(function() {
+        // Força verificação após o aperto de mão da SDK
+        if (!currentOppId) {
+            capturarIdEBuscar();
+        }
+    });
 
     function carregarEmpresas() {
-        document.getElementById("header-info").innerHTML = "<span>Executando busca no CRM...</span>";
+        document.getElementById("header-info").innerHTML = "<span>Processando parceiros...</span>";
 
         ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", { "oppId": currentOppId })
         .then(function(data) {
@@ -197,7 +199,7 @@
                     });
 
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="loading-state">Nenhuma empresa qualificada encontrada para esta subcategoria.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="loading-state">Nenhuma empresa encontrada para esta subcategoria com Contato Certo.</td></tr>`;
                 }
             } else {
                 tbody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:#ef4444;">Erro Backend: ${res.message}</td></tr>`;
