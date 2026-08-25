@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match de Empresas - Fitstock</title>
-    <!-- SDK Oficial do Zoho CRM Widget -->
-    <script src="https://live.zohocdn.com/zohocrm/v2/sdk/1.0.0/sdk.js"></script>
+    <title>Match de Oportunidades Fitstock</title>
+    <!-- SDK Oficial Zoho CRM (CDN Principal Estável) -->
+    <script src="https://js.zohostatic.com/zohocrm/v2/sdk/1.0.0/sdk.js"></script>
     <style>
         :root {
             --fitstock-green: #28a745;
@@ -44,7 +44,6 @@
             font-weight: 700;
             color: var(--fitstock-dark);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .badge-fitstock { 
@@ -81,8 +80,6 @@
             background-color: #ffffff;
         }
 
-        tr:hover td { background-color: #f8fafc; }
-
         .btn-fitstock { 
             background-color: var(--fitstock-green); 
             color: #ffffff; 
@@ -92,11 +89,9 @@
             font-size: 12px; 
             font-weight: 600; 
             cursor: pointer; 
-            transition: all 0.2s ease; 
         }
 
         .btn-fitstock:hover { background-color: var(--fitstock-green-hover); }
-        .btn-fitstock:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
         .loading-state { 
             text-align: center; 
@@ -111,7 +106,7 @@
 <div class="fitstock-card">
     <div class="fitstock-header">
         <div class="fitstock-title">Match de Oportunidades Fitstock</div>
-        <div id="header-info"><span class="loading-state">Iniciando SDK...</span></div>
+        <div id="header-info"><span class="loading-state">Carregando SDK...</span></div>
     </div>
     
     <table id="tabela-empresas">
@@ -132,29 +127,32 @@
 <script>
     var currentOppId = null;
 
-    // Garante escuta universal para carregamento em Lista Relacionada
-    ZOHO.embeddedApp.on("PageLoad", function(data) {
-        if (data && data.EntityId) {
-            currentOppId = data.EntityId;
-            carregarEmpresas();
-        } else {
-            // Fallback para capturar EntityId da URL/Contexto se o evento omitir o payload
-            ZOHO.CRM.INTERACTION.getPageInfo().then(function(info) {
-                if(info && info.recordId) {
-                    currentOppId = info.recordId;
-                    carregarEmpresas();
-                } else {
-                    document.getElementById("header-info").innerHTML = "<span style='color:red;'>ID do Registro não identificado.</span>";
-                }
-            });
+    // Inicialização segura verificando a injeção do SDK
+    window.onload = function() {
+        if (typeof ZOHO === "undefined" || !ZOHO.embeddedApp) {
+            document.getElementById("header-info").innerHTML = "<span style='color:red;'>Erro: SDK do Zoho não carregou. Verifique a conexão.</span>";
+            return;
         }
-    });
 
-    // Inicialização explícita
-    ZOHO.embeddedApp.init();
+        ZOHO.embeddedApp.on("PageLoad", function(data) {
+            if (data && data.EntityId) {
+                currentOppId = data.EntityId;
+                carregarEmpresas();
+            } else {
+                ZOHO.CRM.INTERACTION.getPageInfo().then(function(info) {
+                    if (info && info.recordId) {
+                        currentOppId = info.recordId;
+                        carregarEmpresas();
+                    }
+                });
+            }
+        });
+
+        ZOHO.embeddedApp.init();
+    };
 
     function carregarEmpresas() {
-        document.getElementById("header-info").innerHTML = "<span>Consultando banco...</span>";
+        document.getElementById("header-info").innerHTML = "<span>Executando busca...</span>";
 
         ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", { "oppId": currentOppId })
         .then(function(data) {
@@ -182,20 +180,17 @@
                         tbody.appendChild(tr);
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="4" class="loading-state">Nenhuma empresa encontrada para esta subcategoria com Contato Certo.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="4" class="loading-state">Nenhuma empresa encontrada com Contato Certo.</td></tr>`;
                 }
             } else {
-                tbody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:#ef4444;">Erro na Busca: ${res.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:#ef4444;">Erro: ${res.message}</td></tr>`;
             }
-        }).catch(function(err) {
-            document.getElementById("header-info").innerHTML = "<span style='color:red;'>Erro na execução da Function.</span>";
-            console.error("Erro Deluge Exec:", err);
         });
     }
 
     function criarNegociacao(empresaId, contatoId, btn) {
         btn.disabled = true;
-        btn.innerText = "Processando...";
+        btn.innerText = "Criando...";
 
         ZOHO.CRM.FUNCTIONS.execute("standalone.criarnegociacaoeorcamento", {
             "oppId": currentOppId,
@@ -205,11 +200,11 @@
         .then(function(data) {
             var res = JSON.parse(data.details.output);
             if (res.status === "success") {
-                btn.innerText = "Negociação Criada!";
+                btn.innerText = "Criado com Sucesso!";
                 btn.style.backgroundColor = "#0284c7";
                 ZOHO.CRM.UI.Record.open({ Entity: "Deals", RecordID: res.deal_id });
             } else {
-                alert("Falha ao criar: " + res.message);
+                alert("Erro ao criar: " + res.message);
                 btn.disabled = false;
                 btn.innerText = "Criar Negociação";
             }
