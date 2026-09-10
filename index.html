@@ -111,7 +111,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Match Fitstock (v2.0)</h1>
+        <h1>Match Fitstock</h1>
         <p>Identificação de empresas por subcategoria e seleção de contatos.</p>
         <div id="status" class="status loading">Inicializando widget...</div>
     </div>
@@ -148,8 +148,8 @@
 </div>
 
 <script>
-    // NOME EXATO DO API NAME (Sem namespace de Sandbox)
-    const FUNCTION_API_NAME = "buscarempresaswidget";
+    // Endpoint REST direto da sua Sandbox
+    const API_ENDPOINT = "https://sandbox.zohoapis.com/crm/v7/functions/buscarempresaswidget/actions/execute?auth_type=apikey&zapikey=1003.1af74e79ad94773ae3e28d52ee9629c9.406d5839a514635f54a6f972a548e067";
 
     let currentOppId = null;
 
@@ -251,38 +251,42 @@
         }
 
         log("carregarEmpresas() executado com oppId = " + currentOppId);
-        setStatus("Buscando empresas compatíveis...", "loading");
+        setStatus("Buscando empresas compatíveis via REST API...", "loading");
 
-        const reqData = {
+        const payload = {
             arguments: JSON.stringify({
                 oppId: currentOppId
             })
         };
 
-        log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "') [Sem Namespace]");
+        log("Disparando fetch HTTP POST direto para REST API...");
 
         try {
-            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            const response = await fetch(API_ENDPOINT, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
 
-            log("Resposta da FUNCTIONS.execute:");
-            log(JSON.stringify(response, null, 2));
+            const data = await response.json();
 
-            if (!response) {
-                throw new Error("A função não retornou resposta.");
-            }
+            log("Resposta bruta da REST API:");
+            log(JSON.stringify(data, null, 2));
 
-            let output = response.output;
+            let output = data.output;
 
             if (typeof output === "string") {
                 try {
                     output = JSON.parse(output);
-                } catch (parseError) {
-                    log("Output não é string JSON. Mantendo valor bruto.");
+                } catch (e) {
+                    log("Output é string não-JSON.");
                 }
             }
 
             if (output && output.status === "error") {
-                throw new Error(output.message || "A função Deluge retornou um erro.");
+                throw new Error(output.message || "A função Deluge retornou erro.");
             }
 
             if (output && Array.isArray(output.empresas)) {
@@ -294,9 +298,9 @@
             }
 
         } catch (error) {
-            console.error("Erro em FUNCTIONS.execute:", error);
-            log("ERRO em FUNCTIONS.execute: " + JSON.stringify(error));
-            setStatus("Erro ao chamar a função.", "error");
+            console.error("Erro na REST API:", error);
+            log("ERRO no fetch da REST API: " + error.message);
+            setStatus("Erro ao conectar com a REST API.", "error");
         }
     }
 
@@ -333,7 +337,7 @@
             });
     }
 
-    log("Widget v2.0 carregado na janela.");
+    log("Widget carregado.");
     registrarZoho();
 </script>
 </body>
