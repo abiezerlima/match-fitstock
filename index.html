@@ -112,7 +112,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Match Fitstock (v2.2)</h1>
+        <h1>Match Fitstock (v2.3)</h1>
         <p>Identificação de empresas por subcategoria e criação de negociação.</p>
         <div id="status" class="status loading">Inicializando widget...</div>
     </div>
@@ -152,7 +152,7 @@
     const FUNCTION_API_NAME = "buscarempresaswidget";
 
     let currentOppId = null;
-    let contextData = null; // Guarda dados da Oportunidade de Origem retornado pelo Deluge
+    let contextData = null;
 
     const statusElement = document.getElementById("status");
     const debugElement = document.getElementById("debug");
@@ -224,7 +224,7 @@
         }).join("");
     }
 
-    function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
+    async function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
         if (!contextData) {
             alert("Dados de contexto não carregados.");
             return;
@@ -232,24 +232,22 @@
 
         const selectElement = document.getElementById("select_contact_" + empresaDestinoId);
         const contatoDestinoId = selectElement ? selectElement.value : null;
-        const selectOption = selectElement ? selectElement.options[selectElement.selectedIndex] : null;
-        const contatoDestinoNome = selectOption ? selectOption.getAttribute("data-nome") : "";
 
         if (!contatoDestinoId) {
-            alert("Por favor, selecione um contato válido para a negociação.");
+            alert("Por favor, selecione um contato para a negociação.");
             return;
         }
+
+        setStatus("Criando negociação no CRM...", "loading");
 
         let sellerAccountId = "", sellerAccountName = "";
         let sellerContactId = "";
         let buyerAccountId = "", buyerAccountName = "";
         let buyerContactId = "";
 
-        // Lógica de mapeamento dependendo de quem é a Oportunidade de Origem (Venda = Seller / Compra = Buyer)
         const tipoOpp = (contextData.tipo_oportunidade || "").toLowerCase();
 
         if (tipoOpp === "venda" || tipoOpp === "sales") {
-            // A Oportunidade de Origem é SELLER, a empresa encontrada é BUYER
             sellerAccountId = contextData.empresa_origem_id;
             sellerAccountName = contextData.empresa_origem_nome;
             sellerContactId = contextData.contato_origem_id;
@@ -258,7 +256,6 @@
             buyerAccountName = empresaDestinoNome;
             buyerContactId = contatoDestinoId;
         } else {
-            // A Oportunidade de Origem é BUYER, a empresa encontrada é SELLER
             buyerAccountId = contextData.empresa_origem_id;
             buyerAccountName = contextData.empresa_origem_nome;
             buyerContactId = contextData.contato_origem_id;
@@ -268,26 +265,52 @@
             sellerContactId = contatoDestinoId;
         }
 
-        // Nome Padrão da Oportunidade: "[Nome do Produto] Seller x Buyer"
         const dealName = `[${contextData.produto_nome}] ${sellerAccountName} x ${buyerAccountName}`;
 
-        const recordPayload = {
+        const payloadCriacao = {
             "Deal_Name": dealName,
             "Nome_Produto": contextData.produto_id ? { "id": contextData.produto_id } : null,
-            "Account_Name": sellerAccountId ? { "id": sellerAccountId } : null,         // Empresa Seller
-            "Contact_Name": sellerContactId ? { "id": sellerContactId } : null,         // Nome do Contato (Seller)
-            "Empresa_Buyer": buyerAccountId ? { "id": buyerAccountId } : null,          // Empresa Buyer
-            "Comprador1": buyerContactId ? { "id": buyerContactId } : null              // Comprador (Contato Buyer)
+            "Account_Name": sellerAccountId ? { "id": sellerAccountId } : null,
+            "Contact_Name": sellerContactId ? { "id": sellerContactId } : null,
+            "Empresa_Buyer": buyerAccountId ? { "id": buyerAccountId } : null,
+            "Comprador1": buyerContactId ? { "id": buyerContactId } : null
         };
 
-        log("Disparando ZOHO.CRM.UI.Record.create('Deals'):");
-        log(JSON.stringify(recordPayload, null, 2));
+        const reqData = {
+            arguments: JSON.stringify({
+                action: "criar_negocio",
+                payload: payloadCriacao
+            })
+        };
 
-        // Abre a janela nativa de criação do Zoho com todos os campos pré-preenchidos
-        ZOHO.CRM.UI.Record.create({
-            Entity: "Deals",
-            RecordData: recordPayload
-        });
+        try {
+            log("Disparando criação de registro via Deluge...");
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+
+            let outputRaw = response.output || (response.details && response.details.output);
+            let output = outputRaw;
+
+            if (typeof outputRaw === "string") {
+                try { output = JSON.parse(outputRaw); } catch (e) {}
+            }
+
+            if (output && output.status === "success" && output.deal_id) {
+                setStatus("Negociação criada com sucesso! Redirecionando...", "success");
+                log("Sucesso! ID da Negociação: " + output.deal_id);
+
+                // Abre a página do registro criado
+                ZOHO.CRM.UI.Record.open({
+                    Entity: "Deals",
+                    RecordID: output.deal_id
+                });
+            } else {
+                throw new Error((output && output.message) || "Erro ao criar negociação.");
+            }
+
+        } catch (err) {
+            log("Erro ao criar negociação: " + err.message);
+            setStatus("Erro ao criar negociação no CRM.", "error");
+        }
     }
 
     async function carregarEmpresas() {
@@ -319,7 +342,7 @@
             }
 
             if (output && Array.isArray(output.empresas)) {
-                contextData = output; // Armazena os dados para uso ao clicar no botão
+                contextData = output;
                 renderResults(output.empresas);
                 setStatus("Busca concluída com sucesso.", "success");
             } else {
@@ -348,7 +371,7 @@
         ZOHO.embeddedApp.init();
     }
 
-    log("Widget v2.2 carregado na janela.");
+    log("Widget v2.3 carregado na janela.");
     registrarZoho();
 </script>
 </body>
