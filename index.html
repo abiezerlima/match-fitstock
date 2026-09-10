@@ -223,11 +223,11 @@
             return;
         }
 
-        // IMPORTANTE: ZOHO.CRM.FUNCTIONS.execute exige os parâmetros dentro
-        // da chave "arguments", como uma string JSON — não como objeto solto.
-        var reqData = {
-            "arguments": JSON.stringify({ "oppId": currentOppId })
-        };
+        // TENTATIVA: function "Avulso" com parâmetro tipado (Int oppId).
+        // Passamos o parâmetro direto na raiz, com o MESMO NOME do parâmetro
+        // Deluge (oppId) — sem o wrapper "arguments", que é específico de
+        // functions do tipo REST API (não disponível nesta conta).
+        var reqData = { "oppId": currentOppId };
         debugLog("Chamando standalone.BuscarEmpresasWidget com: " + JSON.stringify(reqData));
 
         ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", reqData)
@@ -283,11 +283,9 @@
         btn.innerText = "Criando...";
 
         var reqData = {
-            "arguments": JSON.stringify({
-                "oppId": currentOppId,
-                "empresaAlvoId": empresaId,
-                "contatoAlvoId": contatoId
-            })
+            "oppId": currentOppId,
+            "empresaAlvoId": empresaId,
+            "contatoAlvoId": contatoId
         };
 
         ZOHO.CRM.FUNCTIONS.execute("standalone.criarnegociacaoeorcamento", reqData)
