@@ -228,9 +228,9 @@
         // Deluge (oppId) — sem o wrapper "arguments", que é específico de
         // functions do tipo REST API (não disponível nesta conta).
         var reqData = { "oppId": currentOppId };
-        debugLog("Chamando standalone.BuscarEmpresasWidget com: " + JSON.stringify(reqData));
+        debugLog("Chamando standalone.buscarempresaswidget com: " + JSON.stringify(reqData));
 
-        ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", reqData)
+        ZOHO.CRM.FUNCTIONS.execute("standalone.buscarempresaswidget", reqData)
         .then(function(data) {
             debugLog("Resposta bruta de BuscarEmpresasWidget: " + JSON.stringify(data));
             var res = JSON.parse(data.details.output);
