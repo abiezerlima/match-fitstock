@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Match de Oportunidades Fitstock</title>
-    <!-- CDN OFICIAL E ATUALIZADA DO ZOHO CRM SDK -->
-    <script src="https://js.zohostatic.com/zohocrm/v2/sdk/1.0.0/sdk.js"></script>
+    <!-- CDN OFICIAL DO ZOHO CRM JS SDK (embeddedApp-js-sdk v1.2) -->
+    <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
     <style>
         :root {
             --fitstock-green: #28a745;
@@ -130,7 +130,7 @@
     function extrairIdDaUrl() {
         var params = new URLSearchParams(window.location.search);
         var id = params.get("recId") || params.get("crmEntityId") || params.get("id");
-        
+
         if (!id && document.referrer) {
             var matches = document.referrer.match(/\/(\d{15,20})/);
             if (matches && matches[1]) {
@@ -145,17 +145,37 @@
 
         if (currentOppId) {
             carregarEmpresas();
-        } else if (typeof ZOHO !== "undefined" && ZOHO.embeddedApp) {
-            ZOHO.embeddedApp.on("PageLoad", function(data) {
-                if (data && data.EntityId) {
-                    currentOppId = data.EntityId;
-                    carregarEmpresas();
-                }
-            });
-            ZOHO.embeddedApp.init();
-        } else {
-            document.getElementById("header-info").innerHTML = "<span style='color:#ef4444;'>ID do Registro não localizado.</span>";
+            return;
         }
+
+        // Aguarda o SDK do Zoho ficar disponível em vez de checar uma única vez.
+        // Evita falso "ID não localizado" quando o SDK ainda está terminando de carregar.
+        var tentativas = 0;
+        var maxTentativas = 25; // ~5s no total (25 x 200ms)
+        var intervalo = setInterval(function () {
+            tentativas++;
+
+            if (typeof ZOHO !== "undefined" && ZOHO.embeddedApp) {
+                clearInterval(intervalo);
+
+                ZOHO.embeddedApp.on("PageLoad", function (data) {
+                    if (data && data.EntityId) {
+                        currentOppId = data.EntityId;
+                        carregarEmpresas();
+                    } else {
+                        document.getElementById("header-info").innerHTML =
+                            "<span style='color:#ef4444;'>ID do Registro não localizado.</span>";
+                    }
+                });
+
+                ZOHO.embeddedApp.init();
+
+            } else if (tentativas >= maxTentativas) {
+                clearInterval(intervalo);
+                document.getElementById("header-info").innerHTML =
+                    "<span style='color:#ef4444;'>SDK do CRM inacessível.</span>";
+            }
+        }, 200);
     }
 
     function carregarEmpresas() {
