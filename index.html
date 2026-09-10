@@ -111,7 +111,7 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Match Fitstock</h1>
+        <h1>Match Fitstock (v2.0)</h1>
         <p>Identificação de empresas por subcategoria e seleção de contatos.</p>
         <div id="status" class="status loading">Inicializando widget...</div>
     </div>
@@ -148,7 +148,7 @@
 </div>
 
 <script>
-    // API Name limpo (sem o prefixo de namespace da Sandbox)
+    // NOME EXATO DO API NAME (Sem namespace de Sandbox)
     const FUNCTION_API_NAME = "buscarempresaswidget";
 
     let currentOppId = null;
@@ -253,15 +253,13 @@
         log("carregarEmpresas() executado com oppId = " + currentOppId);
         setStatus("Buscando empresas compatíveis...", "loading");
 
-        // Estrutura de payload direta para o SDK do CRM
         const reqData = {
-            auth_type: "oauth",
             arguments: JSON.stringify({
                 oppId: currentOppId
             })
         };
 
-        log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "')");
+        log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "') [Sem Namespace]");
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
@@ -335,7 +333,7 @@
             });
     }
 
-    log("Widget carregado na janela.");
+    log("Widget v2.0 carregado na janela.");
     registrarZoho();
 </script>
 </body>
