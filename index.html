@@ -99,6 +99,19 @@
             color: #64748b; 
             font-size: 13px;
         }
+
+        #debug-box {
+            font-family: monospace;
+            font-size: 11px;
+            background: #0f172a;
+            color: #a7f3d0;
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            white-space: pre-wrap;
+            display: none;
+        }
+        #debug-box.show { display: block; }
     </style>
 </head>
 <body>
@@ -122,10 +135,27 @@
             <tr><td colspan="4" class="loading-state">Buscando potenciais parceiros...</td></tr>
         </tbody>
     </table>
+
+    <!-- Painel de diagnóstico: mostra cada etapa direto na tela, sem precisar de DevTools -->
+    <div id="debug-box"></div>
 </div>
 
 <script>
     var currentOppId = null;
+    var debugLines = [];
+
+    function debugLog(msg) {
+        debugLines.push("[" + new Date().toLocaleTimeString() + "] " + msg);
+        var box = document.getElementById("debug-box");
+        box.className = "show";
+        box.textContent = debugLines.join("\n");
+        console.log("[FitstockWidget]", msg);
+    }
+
+    function setHeaderError(msg) {
+        document.getElementById("header-info").innerHTML =
+            "<span style='color:#ef4444;'>" + msg + "</span>";
+    }
 
     function extrairIdDaUrl() {
         var params = new URLSearchParams(window.location.search);
@@ -137,10 +167,14 @@
                 id = matches[1];
             }
         }
+        debugLog("extrairIdDaUrl -> " + (id || "nenhum id encontrado na URL/referrer"));
         return id;
     }
 
     function iniciar() {
+        debugLog("iniciar() chamado. window.location.href = " + window.location.href);
+        debugLog("document.referrer = " + (document.referrer || "(vazio)"));
+
         currentOppId = extrairIdDaUrl();
 
         if (currentOppId) {
@@ -148,8 +182,8 @@
             return;
         }
 
-        // Aguarda o SDK do Zoho ficar disponível em vez de checar uma única vez.
-        // Evita falso "ID não localizado" quando o SDK ainda está terminando de carregar.
+        debugLog("Aguardando SDK do Zoho (typeof ZOHO agora = " + typeof ZOHO + ")");
+
         var tentativas = 0;
         var maxTentativas = 25; // ~5s no total (25 x 200ms)
         var intervalo = setInterval(function () {
@@ -157,32 +191,35 @@
 
             if (typeof ZOHO !== "undefined" && ZOHO.embeddedApp) {
                 clearInterval(intervalo);
+                debugLog("SDK disponível após " + (tentativas * 200) + "ms. Registrando PageLoad e chamando init()...");
 
                 ZOHO.embeddedApp.on("PageLoad", function (data) {
+                    debugLog("Evento PageLoad recebido: " + JSON.stringify(data));
                     if (data && data.EntityId) {
                         currentOppId = data.EntityId;
                         carregarEmpresas();
                     } else {
-                        document.getElementById("header-info").innerHTML =
-                            "<span style='color:#ef4444;'>ID do Registro não localizado.</span>";
+                        setHeaderError("PageLoad disparou, mas sem EntityId. Ver painel de diagnóstico abaixo.");
                     }
                 });
 
                 ZOHO.embeddedApp.init();
+                debugLog("ZOHO.embeddedApp.init() executado. Aguardando evento PageLoad...");
 
             } else if (tentativas >= maxTentativas) {
                 clearInterval(intervalo);
-                document.getElementById("header-info").innerHTML =
-                    "<span style='color:#ef4444;'>SDK do CRM inacessível.</span>";
+                debugLog("Timeout: typeof ZOHO = " + typeof ZOHO + ", ZOHO.embeddedApp = " + (typeof ZOHO !== "undefined" ? typeof ZOHO.embeddedApp : "n/a"));
+                setHeaderError("SDK do CRM não respondeu em 5s. Ver painel de diagnóstico abaixo.");
             }
         }, 200);
     }
 
     function carregarEmpresas() {
+        debugLog("carregarEmpresas() com oppId = " + currentOppId);
         document.getElementById("header-info").innerHTML = "<span>Consultando banco de dados...</span>";
 
         if (typeof ZOHO === "undefined" || !ZOHO.CRM || !ZOHO.CRM.FUNCTIONS) {
-            document.getElementById("header-info").innerHTML = "<span style='color:#ef4444;'>SDK do CRM inacessível.</span>";
+            setHeaderError("SDK do CRM inacessível (ZOHO.CRM.FUNCTIONS ausente).");
             return;
         }
 
@@ -226,6 +263,10 @@
             } else {
                 tbody.innerHTML = `<tr><td colspan="4" class="loading-state" style="color:#ef4444;">Erro Backend: ${res.message}</td></tr>`;
             }
+        })
+        .catch(function(err) {
+            debugLog("Erro em FUNCTIONS.execute: " + (err && err.message ? err.message : JSON.stringify(err)));
+            setHeaderError("Erro ao chamar a função de backend. Ver painel de diagnóstico abaixo.");
         });
     }
 
