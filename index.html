@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match Fitstock</title>
 
-    <title>Match de Oportunidades Fitstock</title>
-
+    <!-- ============================================================
+         ZOHO CRM WIDGET SDK
+         ============================================================ -->
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
 
     <style>
@@ -17,364 +18,345 @@
         body {
             margin: 0;
             padding: 20px;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f8fafc;
-            color: #1e293b;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            background: #f5f6f8;
+            color: #202124;
         }
 
-        #header-info {
-            margin-bottom: 20px;
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        #loading {
-            display: none;
+        .header {
+            background: #ffffff;
+            border-radius: 10px;
             padding: 20px;
-            text-align: center;
+            margin-bottom: 16px;
+            border: 1px solid #e2e5e9;
         }
 
-        #error {
-            display: none;
-            padding: 15px;
-            border-radius: 8px;
-            background: #fee2e2;
+        .header h1 {
+            margin: 0 0 8px 0;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .status {
+            margin-top: 15px;
+            padding: 12px 14px;
+            border-radius: 7px;
+            background: #f1f5f9;
+            font-size: 14px;
+        }
+
+        .status.success {
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .status.error {
+            background: #fef2f2;
             color: #991b1b;
         }
 
-        #results {
-            display: none;
+        .status.loading {
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .results {
+            background: #ffffff;
+            border: 1px solid #e2e5e9;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .results-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .results-header h2 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 600;
+        }
+
+        .count {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8fafc;
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 1px solid #e5e7eb;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 13px 16px;
+            font-size: 14px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        .debug {
+            margin-top: 16px;
+            background: #111827;
+            color: #d1d5db;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .debug-title {
+            color: #ffffff;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 5px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 12px;
         }
     </style>
 </head>
-
 <body>
+<div class="container">
 
-    <div id="header-info">
-        Carregando...
+    <div class="header">
+        <h1>Match Fitstock</h1>
+        <p>Identificação automática de empresas e contatos compatíveis com a oportunidade.</p>
+        <div id="status" class="status loading">Inicializando widget...</div>
     </div>
 
-    <div id="loading">
-        Buscando empresas compatíveis...
+    <div class="results">
+        <div class="results-header">
+            <h2>Empresas encontradas</h2>
+            <div id="count" class="count">0 empresas</div>
+        </div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Contato</th>
+                        <th>Telefone</th>
+                        <th>Subcategoria</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    <tr>
+                        <td colspan="4" class="empty">Aguardando carregamento...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div id="error"></div>
+    <div class="debug">
+        <div class="debug-title">Debug Log</div>
+        <div id="debug">Inicializando...</div>
+    </div>
 
-    <div id="results"></div>
+</div>
 
-    <script>
-        let currentOppId = null;
+<script>
+    // API Name da REST API Function
+    const FUNCTION_API_NAME = "buscarempresaswidget";
 
-        function log(msg, data) {
-            console.log("[MATCH FITSTOCK]", msg, data || "");
+    let currentOppId = null;
+
+    const statusElement = document.getElementById("status");
+    const debugElement = document.getElementById("debug");
+    const resultsBody = document.getElementById("resultsBody");
+    const countElement = document.getElementById("count");
+
+    function log(message) {
+        const time = new Date().toLocaleTimeString("pt-BR");
+        const text = "[" + time + "] " + message;
+        console.log(text);
+        debugElement.textContent += "\n" + text;
+    }
+
+    function setStatus(message, type) {
+        statusElement.textContent = message;
+        statusElement.className = "status " + type;
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return "";
+        return String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function renderResults(empresas) {
+        if (!empresas || !Array.isArray(empresas) || empresas.length === 0) {
+            resultsBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="empty">Nenhuma empresa compatível foi encontrada.</td>
+                </tr>
+            `;
+            countElement.textContent = "0 empresas";
+            return;
         }
 
-        function mostrarErro(msg) {
-            document.getElementById("loading").style.display = "none";
+        countElement.textContent = empresas.length === 1 ? "1 empresa" : empresas.length + " empresas";
 
-            const error = document.getElementById("error");
+        resultsBody.innerHTML = empresas.map(function(empresa) {
+            return `
+                <tr>
+                    <td><strong>${escapeHtml(empresa.nome)}</strong></td>
+                    <td>${escapeHtml(empresa.contato_nome)}</td>
+                    <td>${escapeHtml(empresa.telefone)}</td>
+                    <td><span class="tag">${escapeHtml(empresa.subcategoria)}</span></td>
+                </tr>
+            `;
+        }).join("");
+    }
 
-            error.style.display = "block";
-            error.innerHTML = msg;
+    async function carregarEmpresas() {
+        if (!currentOppId) {
+            log("ERRO: currentOppId não foi definido.");
+            setStatus("Não foi possível identificar a oportunidade.", "error");
+            return;
         }
 
-        function extrairIdDaUrl() {
-            const url = window.location.href;
+        log("carregarEmpresas() executado com oppId = " + currentOppId);
+        setStatus("Buscando empresas compatíveis...", "loading");
 
-            log("URL atual:", url);
+        const reqData = {
+            arguments: JSON.stringify({ oppId: currentOppId })
+        };
 
-            const match = url.match(
-                /[?&](?:recordId|id|EntityId)=([^&]+)/i
-            );
+        log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "')");
 
-            if (match && match[1]) {
-                return decodeURIComponent(match[1]);
+        try {
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+
+            log("Resposta da FUNCTIONS.execute:");
+            log(JSON.stringify(response, null, 2));
+
+            if (!response) {
+                throw new Error("A função não retornou nenhuma resposta.");
             }
 
-            return null;
+            let output = response.output;
+
+            if (typeof output === "string") {
+                try {
+                    output = JSON.parse(output);
+                } catch (parseError) {
+                    log("Output não é uma string JSON. Mantendo valor original.");
+                }
+            }
+
+            if (output && output.status === "error") {
+                throw new Error(output.message || "A função Deluge retornou um erro.");
+            }
+
+            if (output && Array.isArray(output.empresas)) {
+                renderResults(output.empresas);
+                setStatus("Busca concluída com sucesso.", "success");
+                log("Total de empresas encontradas: " + output.total_encontrados);
+            } else {
+                renderResults([]);
+                setStatus("A função executou, mas não retornou empresas.", "success");
+            }
+
+        } catch (error) {
+            console.error("Erro em FUNCTIONS.execute:", error);
+            log("ERRO em FUNCTIONS.execute: " + JSON.stringify(error));
+            setStatus("Erro ao buscar empresas. Verifique o log abaixo.", "error");
+            resultsBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="empty">Falha ao carregar resultados.</td>
+                </tr>
+            `;
+        }
+    }
+
+    function registrarZoho() {
+        if (typeof ZOHO === "undefined") {
+            log("Aguardando SDK do Zoho...");
+            setTimeout(registrarZoho, 200);
+            return;
         }
 
-        function carregarEmpresas() {
+        log("SDK Zoho detectado. Registrando handler PageLoad...");
+
+        ZOHO.embeddedApp.on("PageLoad", function(data) {
+            log("PageLoad disparado:");
+            log(JSON.stringify(data, null, 2));
+
+            currentOppId = data && data.EntityId ? data.EntityId : null;
 
             if (!currentOppId) {
-                mostrarErro("ID da Oportunidade não encontrado.");
+                setStatus("ID da oportunidade não encontrado no PageLoad.", "error");
                 return;
             }
 
-            log("ID da oportunidade:", currentOppId);
+            carregarEmpresas();
+        });
 
-            document.getElementById("header-info").innerHTML =
-                "<strong>Match Fitstock</strong><br>" +
-                "Oportunidade: " + currentOppId;
-
-            document.getElementById("loading").style.display = "block";
-
-            log("Chamando standalone.BuscarEmpresasWidget");
-
-            ZOHO.CRM.FUNCTIONS.execute(
-                "standalone.BuscarEmpresasWidget",
-                {
-                    arguments: JSON.stringify({
-                        oppId: currentOppId
-                    })
-                }
-            )
-            .then(function(response) {
-
-                log("Resposta da função:", response);
-
-                document.getElementById("loading").style.display = "none";
-
-                if (!response) {
-                    mostrarErro("A função não retornou nenhuma resposta.");
-                    return;
-                }
-
-                if (response.code && response.code !== "success") {
-                    mostrarErro(
-                        "Erro ao executar a função: " +
-                        JSON.stringify(response)
-                    );
-                    return;
-                }
-
-                let output = response.details
-                    ? response.details.output
-                    : null;
-
-                if (!output) {
-                    mostrarErro(
-                        "A função foi executada, mas não retornou dados."
-                    );
-                    return;
-                }
-
-                let dados;
-
-                try {
-                    dados = typeof output === "string"
-                        ? JSON.parse(output)
-                        : output;
-                }
-                catch (e) {
-                    mostrarErro(
-                        "Não foi possível interpretar o retorno da função."
-                    );
-
-                    console.error(e);
-                    return;
-                }
-
-                log("Dados processados:", dados);
-
-                if (dados.status === "error") {
-                    mostrarErro(dados.message || "Erro desconhecido.");
-                    return;
-                }
-
-                renderizarResultados(dados);
+        ZOHO.embeddedApp.init()
+            .then(function() {
+                log("ZOHO.embeddedApp.init() concluído. Aguardando dados da página...");
             })
             .catch(function(error) {
-
-                console.error(
-                    "[MATCH FITSTOCK] Erro na função:",
-                    error
-                );
-
-                mostrarErro(
-                    "Erro ao executar BuscarEmpresasWidget.<br><br>" +
-                    "<small>" +
-                    JSON.stringify(error) +
-                    "</small>"
-                );
+                log("Erro no init do Zoho: " + JSON.stringify(error));
+                setStatus("Erro ao inicializar o SDK do Zoho CRM.", "error");
             });
-        }
+    }
 
-        function renderizarResultados(dados) {
-
-            const results = document.getElementById("results");
-
-            results.style.display = "block";
-
-            if (!dados.empresas || dados.empresas.length === 0) {
-
-                results.innerHTML = `
-                    <div style="
-                        background:#fff;
-                        border-radius:10px;
-                        padding:20px;
-                        border:1px solid #e2e8f0;
-                    ">
-                        <strong>Nenhuma empresa encontrada.</strong>
-                        <p>
-                            Produto:
-                            ${dados.produto_nome || "-"}
-                        </p>
-                    </div>
-                `;
-
-                return;
-            }
-
-            let html = `
-                <div style="
-                    background:#fff;
-                    border-radius:10px;
-                    padding:20px;
-                    border:1px solid #e2e8f0;
-                ">
-
-                    <h2 style="margin-top:0;">
-                        Empresas encontradas
-                    </h2>
-
-                    <p>
-                        <strong>Produto:</strong>
-                        ${dados.produto_nome || "-"}
-                    </p>
-
-                    <p>
-                        <strong>Tipo:</strong>
-                        ${dados.tipo_oportunidade || "-"}
-                    </p>
-
-                    <p>
-                        <strong>Total:</strong>
-                        ${dados.total_encontrados || 0}
-                    </p>
-
-                    <hr>
-
-            `;
-
-            dados.empresas.forEach(function(emp) {
-
-                html += `
-                    <div style="
-                        padding:15px 0;
-                        border-bottom:1px solid #e2e8f0;
-                    ">
-
-                        <strong>
-                            ${emp.empresa_nome || "-"}
-                        </strong>
-
-                        <div style="
-                            margin-top:6px;
-                            font-size:14px;
-                            color:#64748b;
-                        ">
-                            Contato:
-                            ${emp.contato_nome || "-"}
-                        </div>
-
-                        <div style="
-                            margin-top:4px;
-                            font-size:14px;
-                            color:#64748b;
-                        ">
-                            Telefone:
-                            ${emp.telefone || "-"}
-                        </div>
-
-                    </div>
-                `;
-            });
-
-            html += `</div>`;
-
-            results.innerHTML = html;
-        }
-
-        function inicializarWidget() {
-
-            log("Iniciando widget...");
-
-            let tentativas = 0;
-            const maxTentativas = 25;
-
-            const intervalo = setInterval(function() {
-
-                tentativas++;
-
-                log(
-                    "Aguardando ZOHO.embeddedApp...",
-                    tentativas + "/" + maxTentativas
-                );
-
-                if (
-                    typeof ZOHO !== "undefined" &&
-                    ZOHO.embeddedApp
-                ) {
-
-                    clearInterval(intervalo);
-
-                    log("ZOHO.embeddedApp encontrado.");
-
-                    ZOHO.embeddedApp.on(
-                        "PageLoad",
-                        function(data) {
-
-                            log("PageLoad recebido:", data);
-
-                            if (
-                                data &&
-                                data.EntityId
-                            ) {
-
-                                currentOppId = data.EntityId;
-
-                                log(
-                                    "EntityId encontrado:",
-                                    currentOppId
-                                );
-
-                                carregarEmpresas();
-
-                            } else {
-
-                                log(
-                                    "PageLoad não trouxe EntityId."
-                                );
-
-                                // Fallback para a URL
-                                currentOppId = extrairIdDaUrl();
-
-                                if (currentOppId) {
-                                    carregarEmpresas();
-                                } else {
-                                    mostrarErro(
-                                        "ID da Oportunidade não localizado."
-                                    );
-                                }
-                            }
-                        }
-                    );
-
-                    log("Inicializando ZOHO.embeddedApp...");
-
-                    ZOHO.embeddedApp.init();
-
-                } else if (tentativas >= maxTentativas) {
-
-                    clearInterval(intervalo);
-
-                    log(
-                        "ZOHO.embeddedApp não ficou disponível."
-                    );
-
-                    mostrarErro(
-                        "Não foi possível inicializar o SDK do Zoho CRM."
-                    );
-                }
-
-            }, 200);
-        }
-
-        document.addEventListener(
-            "DOMContentLoaded",
-            inicializarWidget
-        );
-    </script>
-
+    log("Widget carregado na janela.");
+    registrarZoho();
+</script>
 </body>
-
 </html>
