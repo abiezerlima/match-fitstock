@@ -84,7 +84,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
         }
 
         .results-header h2 {
@@ -124,10 +123,6 @@
             border-bottom: 1px solid #f1f5f9;
         }
 
-        tr:last-child td {
-            border-bottom: none;
-        }
-
         .empty {
             padding: 40px 20px;
             text-align: center;
@@ -165,7 +160,6 @@
 </head>
 <body>
 <div class="container">
-
     <div class="header">
         <h1>Match Fitstock</h1>
         <p>Identificação automática de empresas e contatos compatíveis com a oportunidade.</p>
@@ -200,12 +194,11 @@
         <div class="debug-title">Debug Log</div>
         <div id="debug">Inicializando...</div>
     </div>
-
 </div>
 
 <script>
-    // API Name da REST API Function
-    const FUNCTION_API_NAME = "buscarempresaswidget";
+    // API Name configurado com o namespace da Sandbox
+    const FUNCTION_API_NAME = "processodematch2026__buscarempresaswidget";
 
     let currentOppId = null;
 
@@ -271,11 +264,15 @@
         log("carregarEmpresas() executado com oppId = " + currentOppId);
         setStatus("Buscando empresas compatíveis...", "loading");
 
+        // Estruturação com JSON.stringify na chave arguments para preenchimento correto do crmAPIRequest
         const reqData = {
-            arguments: JSON.stringify({ oppId: currentOppId })
+            arguments: JSON.stringify({
+                oppId: currentOppId
+            })
         };
 
         log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "')");
+        log("Payload enviado: " + JSON.stringify(reqData));
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
@@ -293,7 +290,7 @@
                 try {
                     output = JSON.parse(output);
                 } catch (parseError) {
-                    log("Output não é uma string JSON. Mantendo valor original.");
+                    log("Output não é string JSON. Mantendo valor bruto.");
                 }
             }
 
@@ -307,13 +304,13 @@
                 log("Total de empresas encontradas: " + output.total_encontrados);
             } else {
                 renderResults([]);
-                setStatus("A função executou, mas não retornou empresas.", "success");
+                setStatus("Executado, mas sem empresas retornadas.", "success");
             }
 
         } catch (error) {
             console.error("Erro em FUNCTIONS.execute:", error);
             log("ERRO em FUNCTIONS.execute: " + JSON.stringify(error));
-            setStatus("Erro ao buscar empresas. Verifique o log abaixo.", "error");
+            setStatus("Erro ao chamar o backend.", "error");
             resultsBody.innerHTML = `
                 <tr>
                     <td colspan="4" class="empty">Falha ao carregar resultados.</td>
@@ -338,7 +335,7 @@
             currentOppId = data && data.EntityId ? data.EntityId : null;
 
             if (!currentOppId) {
-                setStatus("ID da oportunidade não encontrado no PageLoad.", "error");
+                setStatus("ID da oportunidade não encontrado.", "error");
                 return;
             }
 
@@ -347,7 +344,7 @@
 
         ZOHO.embeddedApp.init()
             .then(function() {
-                log("ZOHO.embeddedApp.init() concluído. Aguardando dados da página...");
+                log("ZOHO.embeddedApp.init() concluído.");
             })
             .catch(function(error) {
                 log("Erro no init do Zoho: " + JSON.stringify(error));
@@ -355,7 +352,7 @@
             });
     }
 
-    log("Widget carregado na janela.");
+    log("Widget iniciado.");
     registrarZoho();
 </script>
 </body>
