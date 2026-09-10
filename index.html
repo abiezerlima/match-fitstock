@@ -223,8 +223,16 @@
             return;
         }
 
-        ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", { "oppId": currentOppId })
+        // IMPORTANTE: ZOHO.CRM.FUNCTIONS.execute exige os parâmetros dentro
+        // da chave "arguments", como uma string JSON — não como objeto solto.
+        var reqData = {
+            "arguments": JSON.stringify({ "oppId": currentOppId })
+        };
+        debugLog("Chamando standalone.BuscarEmpresasWidget com: " + JSON.stringify(reqData));
+
+        ZOHO.CRM.FUNCTIONS.execute("standalone.BuscarEmpresasWidget", reqData)
         .then(function(data) {
+            debugLog("Resposta bruta de BuscarEmpresasWidget: " + JSON.stringify(data));
             var res = JSON.parse(data.details.output);
             var tbody = document.querySelector("#tabela-empresas tbody");
             var header = document.getElementById("header-info");
@@ -274,11 +282,15 @@
         btn.disabled = true;
         btn.innerText = "Criando...";
 
-        ZOHO.CRM.FUNCTIONS.execute("standalone.criarnegociacaoeorcamento", {
-            "oppId": currentOppId,
-            "empresaAlvoId": empresaId,
-            "contatoAlvoId": contatoId
-        })
+        var reqData = {
+            "arguments": JSON.stringify({
+                "oppId": currentOppId,
+                "empresaAlvoId": empresaId,
+                "contatoAlvoId": contatoId
+            })
+        };
+
+        ZOHO.CRM.FUNCTIONS.execute("standalone.criarnegociacaoeorcamento", reqData)
         .then(function(data) {
             var res = JSON.parse(data.details.output);
             if (res.status === "success") {
@@ -290,6 +302,11 @@
                 btn.disabled = false;
                 btn.innerText = "Criar Negociação";
             }
+        })
+        .catch(function(err) {
+            alert("Erro ao chamar a função de backend: " + (err && err.message ? err.message : JSON.stringify(err)));
+            btn.disabled = false;
+            btn.innerText = "Criar Negociação";
         });
     }
 
