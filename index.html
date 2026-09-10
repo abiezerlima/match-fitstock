@@ -86,11 +86,12 @@
             background: #2563eb;
             color: #fff;
             border: none;
-            padding: 6px 12px;
+            padding: 7px 14px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 600;
+            transition: background 0.2s;
         }
         .btn-action:hover { background: #1d4ed8; }
         .debug {
@@ -111,8 +112,8 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Match Fitstock (v2.1)</h1>
-        <p>Identificação de empresas por subcategoria e seleção de contatos.</p>
+        <h1>Match Fitstock (v2.2)</h1>
+        <p>Identificação de empresas por subcategoria e criação de negociação.</p>
         <div id="status" class="status loading">Inicializando widget...</div>
     </div>
 
@@ -151,6 +152,7 @@
     const FUNCTION_API_NAME = "buscarempresaswidget";
 
     let currentOppId = null;
+    let contextData = null; // Guarda dados da Oportunidade de Origem retornado pelo Deluge
 
     const statusElement = document.getElementById("status");
     const debugElement = document.getElementById("debug");
@@ -196,7 +198,7 @@
             let optionsHtml = "";
             if (empresa.contatos && empresa.contatos.length > 0) {
                 optionsHtml = empresa.contatos.map(function(ct) {
-                    return `<option value="${ct.id}">${escapeHtml(ct.nome)}</option>`;
+                    return `<option value="${ct.id}" data-nome="${escapeHtml(ct.nome)}">${escapeHtml(ct.nome)}</option>`;
                 }).join("");
             } else {
                 optionsHtml = `<option value="">Nenhum contato cadastrado</option>`;
@@ -213,8 +215,8 @@
                     <td>${escapeHtml(empresa.telefone)}</td>
                     <td><span class="tag">${escapeHtml(empresa.subcategoria)}</span></td>
                     <td>
-                        <button class="btn-action" onclick="vincularOportunidade('${empresa.id}')">
-                            Vincular
+                        <button class="btn-action" onclick="criarNegociacao('${empresa.id}', '${escapeHtml(empresa.nome)}')">
+                            Criar Negociação
                         </button>
                     </td>
                 </tr>
@@ -222,80 +224,102 @@
         }).join("");
     }
 
-    async function vincularOportunidade(empresaId) {
-        const selectElement = document.getElementById("select_contact_" + empresaId);
-        const contatoId = selectElement ? selectElement.value : null;
-
-        if (!contatoId) {
-            alert("Por favor, selecione um contato para vincular.");
+    function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
+        if (!contextData) {
+            alert("Dados de contexto não carregados.");
             return;
         }
 
-        log("Vincular acionado - Empresa: " + empresaId + " | Contato: " + contatoId);
+        const selectElement = document.getElementById("select_contact_" + empresaDestinoId);
+        const contatoDestinoId = selectElement ? selectElement.value : null;
+        const selectOption = selectElement ? selectElement.options[selectElement.selectedIndex] : null;
+        const contatoDestinoNome = selectOption ? selectOption.getAttribute("data-nome") : "";
 
+        if (!contatoDestinoId) {
+            alert("Por favor, selecione um contato válido para a negociação.");
+            return;
+        }
+
+        let sellerAccountId = "", sellerAccountName = "";
+        let sellerContactId = "";
+        let buyerAccountId = "", buyerAccountName = "";
+        let buyerContactId = "";
+
+        // Lógica de mapeamento dependendo de quem é a Oportunidade de Origem (Venda = Seller / Compra = Buyer)
+        const tipoOpp = (contextData.tipo_oportunidade || "").toLowerCase();
+
+        if (tipoOpp === "venda" || tipoOpp === "sales") {
+            // A Oportunidade de Origem é SELLER, a empresa encontrada é BUYER
+            sellerAccountId = contextData.empresa_origem_id;
+            sellerAccountName = contextData.empresa_origem_nome;
+            sellerContactId = contextData.contato_origem_id;
+
+            buyerAccountId = empresaDestinoId;
+            buyerAccountName = empresaDestinoNome;
+            buyerContactId = contatoDestinoId;
+        } else {
+            // A Oportunidade de Origem é BUYER, a empresa encontrada é SELLER
+            buyerAccountId = contextData.empresa_origem_id;
+            buyerAccountName = contextData.empresa_origem_nome;
+            buyerContactId = contextData.contato_origem_id;
+
+            sellerAccountId = empresaDestinoId;
+            sellerAccountName = empresaDestinoNome;
+            sellerContactId = contatoDestinoId;
+        }
+
+        // Nome Padrão da Oportunidade: "[Nome do Produto] Seller x Buyer"
+        const dealName = `[${contextData.produto_nome}] ${sellerAccountName} x ${buyerAccountName}`;
+
+        const recordPayload = {
+            "Deal_Name": dealName,
+            "Nome_Produto": contextData.produto_id ? { "id": contextData.produto_id } : null,
+            "Account_Name": sellerAccountId ? { "id": sellerAccountId } : null,         // Empresa Seller
+            "Contact_Name": sellerContactId ? { "id": sellerContactId } : null,         // Nome do Contato (Seller)
+            "Empresa_Buyer": buyerAccountId ? { "id": buyerAccountId } : null,          // Empresa Buyer
+            "Comprador1": buyerContactId ? { "id": buyerContactId } : null              // Comprador (Contato Buyer)
+        };
+
+        log("Disparando ZOHO.CRM.UI.Record.create('Deals'):");
+        log(JSON.stringify(recordPayload, null, 2));
+
+        // Abre a janela nativa de criação do Zoho com todos os campos pré-preenchidos
         ZOHO.CRM.UI.Record.create({
             Entity: "Deals",
-            RecordData: {
-                "Account_Name": { "id": empresaId },
-                "Contact_Name": { "id": contatoId }
-            }
+            RecordData: recordPayload
         });
     }
 
     async function carregarEmpresas() {
         if (!currentOppId) {
-            log("ERRO: currentOppId não foi definido.");
+            log("ERRO: currentOppId não definido.");
             setStatus("Oportunidade não identificada.", "error");
             return;
         }
 
-        log("carregarEmpresas() executado com oppId = " + currentOppId);
+        log("carregarEmpresas() com oppId = " + currentOppId);
         setStatus("Buscando empresas compatíveis...", "loading");
 
         const reqData = {
-            arguments: JSON.stringify({
-                oppId: currentOppId
-            })
+            arguments: JSON.stringify({ oppId: currentOppId })
         };
-
-        log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "')");
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
 
-            log("Resposta bruta da FUNCTIONS.execute recebida.");
-
-            if (!response) {
-                throw new Error("A função não retornou resposta.");
-            }
-
-            // Extração flexível da chave output (Raiz ou Details)
-            let outputRaw = null;
-            if (response.output) {
-                outputRaw = response.output;
-            } else if (response.details && response.details.output) {
-                outputRaw = response.details.output;
-            }
-
+            let outputRaw = response.output || (response.details && response.details.output);
             let output = outputRaw;
 
-            // Desserialização segura caso o output venha como string JSON
             if (typeof outputRaw === "string") {
-                try {
-                    output = JSON.parse(outputRaw);
-                } catch (parseError) {
-                    log("Falha ao realizar parse do outputRaw.");
-                }
+                try { output = JSON.parse(outputRaw); } catch (e) {}
             }
 
-            log("Output processado:");
-            log(JSON.stringify(output, null, 2));
-
             if (output && output.status === "error") {
-                throw new Error(output.message || "A função Deluge retornou um erro.");
+                throw new Error(output.message || "Erro retornado do Deluge.");
             }
 
             if (output && Array.isArray(output.empresas)) {
+                contextData = output; // Armazena os dados para uso ao clicar no botão
                 renderResults(output.empresas);
                 setStatus("Busca concluída com sucesso.", "success");
             } else {
@@ -304,46 +328,27 @@
             }
 
         } catch (error) {
-            console.error("Erro em FUNCTIONS.execute:", error);
             log("ERRO em FUNCTIONS.execute: " + JSON.stringify(error));
-            setStatus("Erro ao processar o retorno da função.", "error");
+            setStatus("Erro ao carregar os dados.", "error");
         }
     }
 
     function registrarZoho() {
         if (typeof ZOHO === "undefined") {
-            log("Aguardando SDK do Zoho...");
             setTimeout(registrarZoho, 200);
             return;
         }
 
-        log("SDK Zoho detectado. Registrando handler PageLoad...");
-
         ZOHO.embeddedApp.on("PageLoad", function(data) {
-            log("PageLoad disparado:");
-            log(JSON.stringify(data, null, 2));
-
+            log("PageLoad disparado.");
             currentOppId = data && data.EntityId ? data.EntityId : null;
-
-            if (!currentOppId) {
-                setStatus("ID da oportunidade não encontrado.", "error");
-                return;
-            }
-
-            carregarEmpresas();
+            if (currentOppId) carregarEmpresas();
         });
 
-        ZOHO.embeddedApp.init()
-            .then(function() {
-                log("ZOHO.embeddedApp.init() concluído.");
-            })
-            .catch(function(error) {
-                log("Erro no init do Zoho: " + JSON.stringify(error));
-                setStatus("Erro ao inicializar o SDK do Zoho CRM.", "error");
-            });
+        ZOHO.embeddedApp.init();
     }
 
-    log("Widget v2.1 carregado na janela.");
+    log("Widget v2.2 carregado na janela.");
     registrarZoho();
 </script>
 </body>
