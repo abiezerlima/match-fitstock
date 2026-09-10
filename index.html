@@ -1,415 +1,58 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock</title>
-
-    <!-- ZOHO CRM WIDGET SDK -->
-    <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
-
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background: #f5f6f8;
-            color: #202124;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: #ffffff;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid #e2e5e9;
-        }
-
-        .header h1 {
-            margin: 0 0 8px 0;
-            font-size: 22px;
-            font-weight: 600;
-        }
-
-        .header p {
-            margin: 0;
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .status {
-            margin-top: 15px;
-            padding: 12px 14px;
-            border-radius: 7px;
-            background: #f1f5f9;
-            font-size: 14px;
-        }
-
-        .status.success {
-            background: #ecfdf5;
-            color: #065f46;
-        }
-
-        .status.error {
-            background: #fef2f2;
-            color: #991b1b;
-        }
-
-        .status.loading {
-            background: #eff6ff;
-            color: #1e40af;
-        }
-
-        .results {
-            background: #ffffff;
-            border: 1px solid #e2e5e9;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        .results-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .results-header h2 {
-            margin: 0;
-            font-size: 17px;
-            font-weight: 600;
-        }
-
-        .count {
-            font-size: 13px;
-            color: #6b7280;
-        }
-
-        .table-wrapper {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th {
-            background: #f8fafc;
-            text-align: left;
-            padding: 12px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #64748b;
-            border-bottom: 1px solid #e5e7eb;
-            text-transform: uppercase;
-        }
-
-        td {
-            padding: 13px 16px;
-            font-size: 14px;
-            border-bottom: 1px solid #f1f5f9;
-            vertical-align: middle;
-        }
-
-        .empty {
-            padding: 40px 20px;
-            text-align: center;
-            color: #6b7280;
-        }
-
-        .tag {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 5px;
-            background: #f1f5f9;
-            color: #475569;
-            font-size: 12px;
-        }
-
-        select.contact-select {
-            width: 100%;
-            padding: 6px 10px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            background: #fff;
-            font-size: 13px;
-        }
-
-        .btn-action {
-            background: #2563eb;
-            color: #fff;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .btn-action:hover {
-            background: #1d4ed8;
-        }
-
-        .debug {
-            margin-top: 16px;
-            background: #111827;
-            color: #d1d5db;
-            border-radius: 10px;
-            padding: 15px;
-            font-family: Consolas, Monaco, monospace;
-            font-size: 12px;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .debug-title {
-            color: #ffffff;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="header">
-        <h1>Match Fitstock</h1>
-        <p>Identificação de empresas por subcategoria e seleção de contatos.</p>
-        <div id="status" class="status loading">Inicializando widget...</div>
-    </div>
-
-    <div class="results">
-        <div class="results-header">
-            <h2>Empresas encontradas</h2>
-            <div id="count" class="count">0 empresas</div>
-        </div>
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Empresa</th>
-                        <th>Contato Selecionado</th>
-                        <th>Telefone</th>
-                        <th>Subcategoria</th>
-                        <th>Ação</th>
-                    </tr>
-                </thead>
-                <tbody id="resultsBody">
-                    <tr>
-                        <td colspan="5" class="empty">Aguardando carregamento...</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="debug">
-        <div class="debug-title">Debug Log</div>
-        <div id="debug">Inicializando...</div>
-    </div>
-</div>
-
-<script>
-    // API Name configurado com o namespace da Sandbox
-    const FUNCTION_API_NAME = "processodematch2026__buscarempresaswidget";
-
-    let currentOppId = null;
-
-    const statusElement = document.getElementById("status");
-    const debugElement = document.getElementById("debug");
-    const resultsBody = document.getElementById("resultsBody");
-    const countElement = document.getElementById("count");
-
-    function log(message) {
-        const time = new Date().toLocaleTimeString("pt-BR");
-        const text = "[" + time + "] " + message;
-        console.log(text);
-        debugElement.textContent += "\n" + text;
+async function carregarEmpresas() {
+    if (!currentOppId) {
+        log("ERRO: currentOppId não foi definido.");
+        setStatus("Oportunidade não identificada.", "error");
+        return;
     }
 
-    function setStatus(message, type) {
-        statusElement.textContent = message;
-        statusElement.className = "status " + type;
-    }
+    log("carregarEmpresas() executado com oppId = " + currentOppId);
+    setStatus("Buscando empresas compatíveis...", "loading");
 
-    function escapeHtml(value) {
-        if (!value) return "";
-        return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
+    // Formato exato esperado pelo SDK para REST API Functions
+    const reqData = {
+        arguments: JSON.stringify({
+            oppId: currentOppId
+        })
+    };
 
-    function renderResults(empresas) {
-        if (!empresas || !Array.isArray(empresas) || empresas.length === 0) {
-            resultsBody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="empty">Nenhuma empresa encontrada para as subcategorias.</td>
-                </tr>
-            `;
-            countElement.textContent = "0 empresas";
-            return;
+    log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "')");
+    log("Payload: " + JSON.stringify(reqData));
+
+    try {
+        const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+
+        log("Resposta da FUNCTIONS.execute:");
+        log(JSON.stringify(response, null, 2));
+
+        if (!response) {
+            throw new Error("A função não retornou resposta.");
         }
 
-        countElement.textContent = empresas.length === 1 ? "1 empresa" : empresas.length + " empresas";
+        let output = response.output;
 
-        resultsBody.innerHTML = empresas.map(function(empresa) {
-            let optionsHtml = "";
-            if (empresa.contatos && empresa.contatos.length > 0) {
-                optionsHtml = empresa.contatos.map(function(ct) {
-                    return `<option value="${ct.id}">${escapeHtml(ct.nome)}</option>`;
-                }).join("");
-            } else {
-                optionsHtml = `<option value="">Nenhum contato cadastrado</option>`;
+        if (typeof output === "string") {
+            try {
+                output = JSON.parse(output);
+            } catch (parseError) {
+                log("Output não é string JSON. Mantendo valor bruto.");
             }
-
-            return `
-                <tr>
-                    <td><strong>${escapeHtml(empresa.nome)}</strong></td>
-                    <td>
-                        <select class="contact-select" id="select_contact_${empresa.id}">
-                            ${optionsHtml}
-                        </select>
-                    </td>
-                    <td>${escapeHtml(empresa.telefone)}</td>
-                    <td><span class="tag">${escapeHtml(empresa.subcategoria)}</span></td>
-                    <td>
-                        <button class="btn-action" onclick="vincularOportunidade('${empresa.id}')">
-                            Vincular
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join("");
-    }
-
-    async function vincularOportunidade(empresaId) {
-        const selectElement = document.getElementById("select_contact_" + empresaId);
-        const contatoId = selectElement ? selectElement.value : null;
-
-        if (!contatoId) {
-            alert("Por favor, selecione um contato para vincular.");
-            return;
         }
 
-        log("Vincular acionado - Empresa: " + empresaId + " | Contato: " + contatoId);
-
-        ZOHO.CRM.UI.Record.create({
-            Entity: "Deals",
-            RecordData: {
-                "Account_Name": { "id": empresaId },
-                "Contact_Name": { "id": contatoId }
-            }
-        });
-    }
-
-    async function carregarEmpresas() {
-        if (!currentOppId) {
-            log("ERRO: currentOppId não foi definido.");
-            setStatus("Oportunidade não identificada.", "error");
-            return;
+        if (output && output.status === "error") {
+            throw new Error(output.message || "A função Deluge retornou um erro.");
         }
 
-        log("carregarEmpresas() executado com oppId = " + currentOppId);
-        setStatus("Buscando empresas compatíveis...", "loading");
-
-        // Payload com estrutura dupla para garantir compatibilidade com REST API Function
-        const reqData = {
-            oppId: currentOppId,
-            arguments: JSON.stringify({
-                oppId: currentOppId
-            })
-        };
-
-        log("Executando ZOHO.CRM.FUNCTIONS.execute('" + FUNCTION_API_NAME + "')");
-
-        try {
-            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-
-            log("Resposta da FUNCTIONS.execute:");
-            log(JSON.stringify(response, null, 2));
-
-            if (!response) {
-                throw new Error("A função não retornou resposta.");
-            }
-
-            let output = response.output;
-
-            if (typeof output === "string") {
-                try {
-                    output = JSON.parse(output);
-                } catch (parseError) {
-                    log("Output não é string JSON. Mantendo valor bruto.");
-                }
-            }
-
-            if (output && output.status === "error") {
-                throw new Error(output.message || "A função Deluge retornou um erro.");
-            }
-
-            if (output && Array.isArray(output.empresas)) {
-                renderResults(output.empresas);
-                setStatus("Busca concluída com sucesso.", "success");
-            } else {
-                renderResults([]);
-                setStatus("Nenhuma empresa encontrada.", "success");
-            }
-
-        } catch (error) {
-            console.error("Erro em FUNCTIONS.execute:", error);
-            log("ERRO em FUNCTIONS.execute: " + JSON.stringify(error));
-            setStatus("Erro ao chamar a função.", "error");
-        }
-    }
-
-    function registrarZoho() {
-        if (typeof ZOHO === "undefined") {
-            log("Aguardando SDK do Zoho...");
-            setTimeout(registrarZoho, 200);
-            return;
+        if (output && Array.isArray(output.empresas)) {
+            renderResults(output.empresas);
+            setStatus("Busca concluída com sucesso.", "success");
+        } else {
+            renderResults([]);
+            setStatus("Nenhuma empresa encontrada.", "success");
         }
 
-        log("SDK Zoho detectado. Registrando handler PageLoad...");
-
-        ZOHO.embeddedApp.on("PageLoad", function(data) {
-            log("PageLoad disparado:");
-            log(JSON.stringify(data, null, 2));
-
-            currentOppId = data && data.EntityId ? data.EntityId : null;
-
-            if (!currentOppId) {
-                setStatus("ID da oportunidade não encontrado.", "error");
-                return;
-            }
-
-            carregarEmpresas();
-        });
-
-        ZOHO.embeddedApp.init()
-            .then(function() {
-                log("ZOHO.embeddedApp.init() concluído.");
-            })
-            .catch(function(error) {
-                log("Erro no init do Zoho: " + JSON.stringify(error));
-                setStatus("Erro ao inicializar o SDK do Zoho CRM.", "error");
-            });
+    } catch (error) {
+        console.error("Erro em FUNCTIONS.execute:", error);
+        log("ERRO em FUNCTIONS.execute: " + JSON.stringify(error));
+        setStatus("Erro ao chamar a função.", "error");
     }
-
-    log("Widget carregado na janela.");
-    registrarZoho();
-</script>
-</body>
-</html>
+}
