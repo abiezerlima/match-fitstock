@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock - Produção</title>
+    <title>Match Fitstock - v4.0 Produção</title>
 
     <!-- ZOHO CRM WIDGET SDK -->
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
@@ -12,79 +12,135 @@
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            padding: 20px;
+            padding: 16px;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-            background: #f5f6f8;
-            color: #202124;
+            background: #f8fafc;
+            color: #1e293b;
         }
-        .container { max-width: 1200px; margin: 0 auto; }
+        .container { max-width: 1250px; margin: 0 auto; }
         .header {
             background: #ffffff;
             border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 16px;
-            border: 1px solid #e2e5e9;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
-        .header h1 { margin: 0 0 8px 0; font-size: 22px; font-weight: 600; }
-        .header p { margin: 0; color: #6b7280; font-size: 14px; }
-        .status {
-            margin-top: 15px;
-            padding: 12px 14px;
-            border-radius: 7px;
-            background: #f1f5f9;
-            font-size: 14px;
-        }
-        .status.success { background: #ecfdf5; color: #065f46; }
-        .status.error { background: #fef2f2; color: #991b1b; }
-        .status.loading { background: #eff6ff; color: #1e40af; }
-        .results {
-            background: #ffffff;
-            border: 1px solid #e2e5e9;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        .results-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid #e5e7eb;
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
-        .results-header h2 { margin: 0; font-size: 17px; font-weight: 600; }
-        .count { font-size: 13px; color: #6b7280; }
+        .header h1 { margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #0f172a; }
+        .header p { margin: 0; color: #64748b; font-size: 13px; }
+        .btn-add-empresa {
+            background: #059669;
+            color: #fff;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.2s;
+        }
+        .btn-add-empresa:hover { background: #047857; }
+        .filter-bar {
+            display: flex;
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .filter-input {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+        }
+        .filter-select {
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            background: #fff;
+        }
+        .status {
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+        .status.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .status.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .status.loading { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .results {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .results-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+        }
+        .results-header h2 { margin: 0; font-size: 15px; font-weight: 600; color: #334155; }
+        .count { font-size: 13px; color: #64748b; font-weight: 500; }
         .table-wrapper { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th {
-            background: #f8fafc;
+            background: #f1f5f9;
             text-align: left;
-            padding: 12px 16px;
-            font-size: 12px;
-            font-weight: 600;
-            color: #64748b;
-            border-bottom: 1px solid #e5e7eb;
+            padding: 10px 14px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+            border-bottom: 1px solid #e2e8f0;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        td { padding: 13px 16px; font-size: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .empty { padding: 40px 20px; text-align: center; color: #6b7280; }
+        td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+        .empty { padding: 35px 20px; text-align: center; color: #64748b; font-size: 14px; }
+        .link-crm {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .link-crm:hover { text-decoration: underline; color: #1d4ed8; }
+        .link-email {
+            color: #0284c7;
+            text-decoration: none;
+            font-size: 12px;
+            margin-left: 4px;
+        }
         .tag {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 5px;
+            padding: 3px 8px;
+            border-radius: 4px;
             background: #f1f5f9;
             color: #475569;
-            font-size: 12px;
+            font-size: 11px;
+            font-weight: 500;
         }
         select.contact-select {
             width: 100%;
-            padding: 6px 10px;
+            padding: 6px 8px;
             border-radius: 6px;
             border: 1px solid #cbd5e1;
             background: #fff;
-            font-size: 13px;
+            font-size: 12px;
         }
         .action-group {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             align-items: center;
         }
         .btn-action {
@@ -92,7 +148,7 @@
             color: #fff;
             border: none;
             padding: 6px 10px;
-            border-radius: 6px;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 12px;
             font-weight: 600;
@@ -102,57 +158,106 @@
             background: #10b981;
             color: #fff;
             border: none;
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 6px 9px;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 12px;
             font-weight: 600;
         }
+        .btn-usa.active { background: #047857; ring: 2px solid #065f46; }
         .btn-usa:hover { background: #059669; }
         .btn-nao-usa {
             background: #ef4444;
             color: #fff;
             border: none;
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 6px 9px;
+            border-radius: 5px;
             cursor: pointer;
             font-size: 12px;
             font-weight: 600;
         }
+        .btn-nao-usa.active { background: #b91c1c; }
         .btn-nao-usa:hover { background: #dc2626; }
+        .btn-delete {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border: 1px solid #e5e7eb;
+            padding: 6px 8px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-delete:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
         .status-badge {
             font-size: 11px;
-            padding: 3px 6px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: 600;
-            display: none;
+            display: inline-block;
+            margin-top: 4px;
         }
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal {
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        .modal h3 { margin: 0 0 12px 0; font-size: 16px; }
+        .modal-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
         .debug {
             margin-top: 16px;
-            background: #111827;
-            color: #d1d5db;
-            border-radius: 10px;
-            padding: 15px;
+            background: #0f172a;
+            color: #94a3b8;
+            border-radius: 8px;
+            padding: 12px;
             font-family: Consolas, Monaco, monospace;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 11px;
+            line-height: 1.4;
             white-space: pre-wrap;
             word-break: break-word;
         }
-        .debug-title { color: #ffffff; font-weight: 600; margin-bottom: 8px; }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>Match Fitstock (v3.0 - Produção)</h1>
-        <p>Identificação de empresas, registro de inteligência e criação de negociação.</p>
+        <div class="header-top">
+            <div>
+                <h1>Match Fitstock (v4.0)</h1>
+                <p>Mapeamento de inteligência de mercado, gestão de empresas e criação de oportunidades.</p>
+            </div>
+            <button class="btn-add-empresa" onclick="abrirModalAdicionar()">
+                + Adicionar Empresa
+            </button>
+        </div>
+
+        <div class="filter-bar">
+            <input type="text" id="searchInput" class="filter-input" placeholder="Buscar por nome da empresa ou subcategoria..." oninput="aplicarFiltros()">
+            <select id="statusFilter" class="filter-select" onchange="aplicarFiltros()">
+                <option value="">Todos os Status</option>
+                <option value="Usa">Status: Usa</option>
+                <option value="Não Usa">Status: Não Usa</option>
+                <option value="Pendente">Status: Pendente</option>
+            </select>
+        </div>
+
         <div id="status" class="status loading">Inicializando widget...</div>
     </div>
 
     <div class="results">
         <div class="results-header">
-            <h2>Empresas encontradas</h2>
+            <h2>Empresas Recomendadas</h2>
             <div id="count" class="count">0 empresas</div>
         </div>
         <div class="table-wrapper">
@@ -176,8 +281,23 @@
     </div>
 
     <div class="debug">
-        <div class="debug-title">Debug Log</div>
+        <div style="color: #fff; font-weight: 600; margin-bottom: 4px;">Debug Log</div>
         <div id="debug">Inicializando...</div>
+    </div>
+</div>
+
+<!-- MODAL ADICIONAR EMPRESA -->
+<div id="modalAdd" class="modal-overlay">
+    <div class="modal">
+        <h3>Adicionar Empresa Sugerida</h3>
+        <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Selecione uma Conta cadastrada no CRM para adicionar a este Match:</p>
+        <select id="selectEmpresaAdd" class="contact-select" style="padding: 8px; font-size: 13px;">
+            <option value="">Carregando empresas...</option>
+        </select>
+        <div class="modal-buttons">
+            <button class="btn-delete" onclick="fecharModalAdicionar()">Cancelar</button>
+            <button class="btn-action" onclick="confirmarAdicionarEmpresa()">Adicionar</button>
+        </div>
     </div>
 </div>
 
@@ -186,6 +306,7 @@
 
     let currentOppId = null;
     let contextData = null;
+    let listaEmpresasOriginal = [];
 
     const statusElement = document.getElementById("status");
     const debugElement = document.getElementById("debug");
@@ -214,11 +335,15 @@
             .replace(/'/g, "&#039;");
     }
 
+    function abrirRegistroCRM(entity, recordId) {
+        ZOHO.CRM.UI.Record.open({ Entity: entity, RecordID: recordId });
+    }
+
     function renderResults(empresas) {
         if (!empresas || !Array.isArray(empresas) || empresas.length === 0) {
             resultsBody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="empty">Nenhuma empresa encontrada para as subcategorias.</td>
+                    <td colspan="5" class="empty">Nenhuma empresa encontrada com os filtros aplicados.</td>
                 </tr>
             `;
             countElement.textContent = "0 empresas";
@@ -229,117 +354,204 @@
 
         resultsBody.innerHTML = empresas.map(function(empresa) {
             let optionsHtml = "";
+            let emailContatoAtivo = "";
+
             if (empresa.contatos && empresa.contatos.length > 0) {
                 optionsHtml = empresa.contatos.map(function(ct) {
-                    return `<option value="${ct.id}" data-nome="${escapeHtml(ct.nome)}">${escapeHtml(ct.nome)}</option>`;
+                    const isSelected = (empresa.contato_persistido === ct.id) ? "selected" : "";
+                    if (isSelected) emailContatoAtivo = ct.email;
+                    return `<option value="${ct.id}" data-nome="${escapeHtml(ct.nome)}" data-email="${escapeHtml(ct.email)}" ${isSelected}>${escapeHtml(ct.nome)}</option>`;
                 }).join("");
             } else {
                 optionsHtml = `<option value="">Nenhum contato cadastrado</option>`;
             }
 
+            const statusClassUsa = empresa.status_persistido === "Usa" ? "active" : "";
+            const statusClassNaoUsa = empresa.status_persistido === "Não Usa" ? "active" : "";
+
+            let badgeHtml = "";
+            if (empresa.status_persistido) {
+                const bg = empresa.status_persistido === "Usa" ? "#d1fae5" : "#fee2e2";
+                const color = empresa.status_persistido === "Usa" ? "#065f46" : "#991b1b";
+                badgeHtml = `<span id="badge_${empresa.id}" class="status-badge" style="background:${bg}; color:${color}">Status: ${empresa.status_persistido}</span>`;
+            } else {
+                badgeHtml = `<span id="badge_${empresa.id}" class="status-badge" style="display:none;"></span>`;
+            }
+
+            const emailBtn = emailContatoAtivo ? `<a class="link-email" href="mailto:${escapeHtml(emailContatoAtivo)}" title="Enviar e-mail para ${escapeHtml(emailContatoAtivo)}">✉️ Email</a>` : `<span id="email_link_${empresa.id}"></span>`;
+
             return `
                 <tr>
-                    <td><strong>${escapeHtml(empresa.nome)}</strong></td>
                     <td>
-                        <select class="contact-select" id="select_contact_${empresa.id}">
-                            ${optionsHtml}
-                        </select>
+                        <a class="link-crm" onclick="abrirRegistroCRM('Accounts', '${empresa.id}')">
+                            ${escapeHtml(empresa.nome)}
+                        </a>
+                    </td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <select class="contact-select" id="select_contact_${empresa.id}" onchange="atualizarLinkEmail('${empresa.id}')">
+                                ${optionsHtml}
+                            </select>
+                            ${emailBtn}
+                        </div>
                     </td>
                     <td>${escapeHtml(empresa.telefone)}</td>
                     <td><span class="tag">${escapeHtml(empresa.subcategoria)}</span></td>
                     <td>
                         <div class="action-group">
-                            <button class="btn-usa" title="Registrar que usa o produto" onclick="registrarUso('${empresa.id}', 'Usa')">
-                                Usa
-                            </button>
-                            <button class="btn-nao-usa" title="Registrar que não usa o produto" onclick="registrarUso('${empresa.id}', 'Não Usa')">
-                                Não Usa
-                            </button>
-                            <button class="btn-action" title="Criar nova Oportunidade" onclick="criarNegociacao('${empresa.id}', '${escapeHtml(empresa.nome)}')">
-                                Criar Negociação
-                            </button>
+                            <button class="btn-usa ${statusClassUsa}" title="Registrar que usa" onclick="registrarUso('${empresa.id}', 'Usa')">Usa</button>
+                            <button class="btn-nao-usa ${statusClassNaoUsa}" title="Registrar que não usa" onclick="registrarUso('${empresa.id}', 'Não Usa')">Não Usa</button>
+                            <button class="btn-action" title="Criar Oportunidade" onclick="criarNegociacao('${empresa.id}', '${escapeHtml(empresa.nome)}')">Criar Negociação</button>
+                            <button class="btn-delete" title="Remover da lista" onclick="removerEmpresa('${empresa.id}')">🗑️</button>
                         </div>
-                        <span id="badge_${empresa.id}" class="status-badge"></span>
+                        ${badgeHtml}
                     </td>
                 </tr>
             `;
         }).join("");
     }
 
-    async function registrarUso(empresaId, statusUso) {
-        if (!contextData || !contextData.produto_id) {
-            alert("Informações do produto de interesse não disponíveis.");
-            return;
+    function atualizarLinkEmail(empresaId) {
+        const select = document.getElementById("select_contact_" + empresaId);
+        if (!select) return;
+        const option = select.options[select.selectedIndex];
+        const email = option ? option.getAttribute("data-email") : "";
+        const emailSpan = document.getElementById("email_link_" + empresaId);
+        if (emailSpan) {
+            emailSpan.innerHTML = email ? `<a class="link-email" href="mailto:${escapeHtml(email)}" title="Enviar e-mail">✉️ Email</a>` : "";
         }
+    }
 
-        log("Registrando Inteligência de Mercado: Empresa " + empresaId + " -> Status: " + statusUso);
-        setStatus("Registrando status na Conta e no Inteligência de Mercado...", "loading");
+    function aplicarFiltros() {
+        const search = document.getElementById("searchInput").value.toLowerCase().trim();
+        const statusVal = document.getElementById("statusFilter").value;
 
-        const payload = {
-            empresa_id: empresaId,
-            produto_id: contextData.produto_id,
-            status_uso: statusUso,
-            opp_id: currentOppId
-        };
+        const filtrados = listaEmpresasOriginal.filter(function(emp) {
+            const matchSearch = emp.nome.toLowerCase().includes(search) || emp.subcategoria.toLowerCase().includes(search);
+            let matchStatus = true;
+            if (statusVal === "Usa") matchStatus = emp.status_persistido === "Usa";
+            else if (statusVal === "Não Usa") matchStatus = emp.status_persistido === "Não Usa";
+            else if (statusVal === "Pendente") matchStatus = !emp.status_persistido;
+
+            return matchSearch && matchStatus;
+        });
+
+        renderResults(filtrados);
+    }
+
+    async function registrarUso(empresaId, statusUso) {
+        if (!contextData || !contextData.produto_id) return;
+
+        const select = document.getElementById("select_contact_" + empresaId);
+        const contatoId = select ? select.value : "";
+
+        setStatus("Registrando inteligência...", "loading");
 
         const reqData = {
             arguments: JSON.stringify({
                 action: "registrar_uso",
-                payload: payload
+                payload: { empresa_id: empresaId, produto_id: contextData.produto_id, status_uso: statusUso, opp_id: currentOppId, contato_id: contatoId }
             })
         };
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-
-            let outputRaw = response.output || (response.details && response.details.output);
-            let output = outputRaw;
-
-            if (typeof outputRaw === "string") {
-                try { output = JSON.parse(outputRaw); } catch (e) {}
-            }
+            let output = response.output || (response.details && response.details.output);
+            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
 
             if (output && output.status === "success") {
-                setStatus("Status (" + statusUso + ") gravado com sucesso!", "success");
-                log("Sucesso ao gravar inteligência para a empresa " + empresaId);
-
-                const badge = document.getElementById("badge_" + empresaId);
-                if (badge) {
-                    badge.textContent = "Status: " + statusUso;
-                    badge.style.display = "inline-block";
-                    badge.style.background = statusUso === "Usa" ? "#d1fae5" : "#fee2e2";
-                    badge.style.color = statusUso === "Usa" ? "#065f46" : "#991b1b";
-                }
-            } else {
-                throw new Error((output && output.message) || "Falha ao gravar inteligência.");
+                setStatus("Status (" + statusUso + ") registrado e salvo no CRM!", "success");
+                
+                // Atualizar objeto local
+                const emp = listaEmpresasOriginal.find(e => e.id === empresaId);
+                if (emp) emp.status_persistido = statusUso;
+                aplicarFiltros();
             }
-
         } catch (err) {
-            log("Erro ao registrar inteligência: " + err.message);
-            setStatus("Erro ao salvar status de uso.", "error");
+            setStatus("Erro ao registrar inteligência.", "error");
+        }
+    }
+
+    async function removerEmpresa(empresaId) {
+        if (!confirm("Deseja remover esta empresa da Oportunidade?")) return;
+
+        setStatus("Removendo empresa...", "loading");
+
+        const reqData = {
+            arguments: JSON.stringify({
+                action: "remover_empresa",
+                payload: { empresa_id: empresaId, opp_id: currentOppId }
+            })
+        };
+
+        try {
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            listaEmpresasOriginal = listaEmpresasOriginal.filter(e => e.id !== empresaId);
+            aplicarFiltros();
+            setStatus("Empresa removida com sucesso.", "success");
+        } catch (err) {
+            setStatus("Erro ao remover empresa.", "error");
+        }
+    }
+
+    async function abrirModalAdicionar() {
+        document.getElementById("modalAdd").style.display = "flex";
+        const select = document.getElementById("selectEmpresaAdd");
+        select.innerHTML = "<option value=''>Carregando empresas...</option>";
+
+        const reqData = { arguments: JSON.stringify({ action: "buscar_todas_contas" }) };
+        try {
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            let output = response.output || (response.details && response.details.output);
+            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
+
+            if (output && Array.isArray(output.contas)) {
+                select.innerHTML = output.contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join("");
+            }
+        } catch (e) {
+            select.innerHTML = "<option value=''>Erro ao carregar empresas</option>";
+        }
+    }
+
+    function fecharModalAdicionar() {
+        document.getElementById("modalAdd").style.display = "none";
+    }
+
+    async function confirmarAdicionarEmpresa() {
+        const empresaId = document.getElementById("selectEmpresaAdd").value;
+        if (!empresaId) return;
+
+        fecharModalAdicionar();
+        setStatus("Adicionando empresa...", "loading");
+
+        const reqData = {
+            arguments: JSON.stringify({
+                action: "adicionar_empresa",
+                payload: { empresa_id: empresaId, opp_id: currentOppId }
+            })
+        };
+
+        try {
+            await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            carregarEmpresas();
+        } catch (err) {
+            setStatus("Erro ao adicionar empresa.", "error");
         }
     }
 
     async function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
-        if (!contextData) {
-            alert("Dados de contexto não carregados.");
-            return;
-        }
-
         const selectElement = document.getElementById("select_contact_" + empresaDestinoId);
         const contatoDestinoId = selectElement ? selectElement.value : null;
 
         if (!contatoDestinoId) {
-            alert("Por favor, selecione um contato para a negociação.");
+            alert("Selecione um contato para a negociação.");
             return;
         }
 
         setStatus("Criando negociação no CRM...", "loading");
 
-        let sellerAccountId = "", sellerAccountName = "";
-        let sellerContactId = "";
-        let buyerAccountId = "", buyerAccountName = "";
-        let buyerContactId = "";
+        let sellerAccountId = "", sellerAccountName = "", sellerContactId = "";
+        let buyerAccountId = "", buyerAccountName = "", buyerContactId = "";
 
         const tipoOpp = (contextData.tipo_oportunidade || "").toLowerCase();
 
@@ -373,81 +585,45 @@
         };
 
         const reqData = {
-            arguments: JSON.stringify({
-                action: "criar_negocio",
-                payload: payloadCriacao
-            })
+            arguments: JSON.stringify({ action: "criar_negocio", payload: payloadCriacao })
         };
 
         try {
-            log("Disparando criação de registro via Deluge...");
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-
-            let outputRaw = response.output || (response.details && response.details.output);
-            let output = outputRaw;
-
-            if (typeof outputRaw === "string") {
-                try { output = JSON.parse(outputRaw); } catch (e) {}
-            }
+            let output = response.output || (response.details && response.details.output);
+            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
 
             if (output && output.status === "success" && output.deal_id) {
                 setStatus("Negociação criada com sucesso! Redirecionando...", "success");
-                log("Sucesso! ID da Negociação: " + output.deal_id);
-
-                ZOHO.CRM.UI.Record.open({
-                    Entity: "Deals",
-                    RecordID: output.deal_id
-                });
-            } else {
-                throw new Error((output && output.message) || "Erro ao criar negociação.");
+                ZOHO.CRM.UI.Record.open({ Entity: "Deals", RecordID: output.deal_id });
             }
-
         } catch (err) {
-            log("Erro ao criar negociação: " + err.message);
-            setStatus("Erro ao criar negociação no CRM.", "error");
+            setStatus("Erro ao criar negociação.", "error");
         }
     }
 
     async function carregarEmpresas() {
-        if (!currentOppId) {
-            log("ERRO: currentOppId não definido.");
-            setStatus("Oportunidade não identificada.", "error");
-            return;
-        }
+        if (!currentOppId) return;
 
-        log("carregarEmpresas() com oppId = " + currentOppId);
         setStatus("Buscando empresas compatíveis...", "loading");
-
-        const reqData = {
-            arguments: JSON.stringify({ oppId: currentOppId })
-        };
+        const reqData = { arguments: JSON.stringify({ oppId: currentOppId }) };
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-
-            let outputRaw = response.output || (response.details && response.details.output);
-            let output = outputRaw;
-
-            if (typeof outputRaw === "string") {
-                try { output = JSON.parse(outputRaw); } catch (e) {}
-            }
-
-            if (output && output.status === "error") {
-                throw new Error(output.message || "Erro retornado do Deluge.");
-            }
+            let output = response.output || (response.details && response.details.output);
+            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
 
             if (output && Array.isArray(output.empresas)) {
                 contextData = output;
-                renderResults(output.empresas);
-                setStatus("Busca concluída com sucesso.", "success");
+                listaEmpresasOriginal = output.empresas;
+                aplicarFiltros();
+                setStatus("Match concluído com sucesso.", "success");
             } else {
                 renderResults([]);
                 setStatus("Nenhuma empresa encontrada.", "success");
             }
-
         } catch (error) {
-            log("ERRO em FUNCTIONS.execute: " + JSON.stringify(error));
-            setStatus("Erro ao carregar os dados.", "error");
+            setStatus("Erro ao carregar dados.", "error");
         }
     }
 
@@ -458,7 +634,6 @@
         }
 
         ZOHO.embeddedApp.on("PageLoad", function(data) {
-            log("PageLoad disparado.");
             currentOppId = data && data.EntityId ? data.EntityId : null;
             if (currentOppId) carregarEmpresas();
         });
@@ -466,7 +641,7 @@
         ZOHO.embeddedApp.init();
     }
 
-    log("Widget v3.0 (Produção) carregado.");
+    log("Widget v4.0 (Produção) carregado.");
     registrarZoho();
 </script>
 </body>
