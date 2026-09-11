@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock</title>
+    <title>Match Fitstock - Produção</title>
 
     <!-- ZOHO CRM WIDGET SDK -->
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
@@ -82,18 +82,51 @@
             background: #fff;
             font-size: 13px;
         }
+        .action-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
         .btn-action {
             background: #2563eb;
             color: #fff;
             border: none;
-            padding: 7px 14px;
+            padding: 6px 10px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 12px;
             font-weight: 600;
-            transition: background 0.2s;
         }
         .btn-action:hover { background: #1d4ed8; }
+        .btn-usa {
+            background: #10b981;
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .btn-usa:hover { background: #059669; }
+        .btn-nao-usa {
+            background: #ef4444;
+            color: #fff;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .btn-nao-usa:hover { background: #dc2626; }
+        .status-badge {
+            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            display: none;
+        }
         .debug {
             margin-top: 16px;
             background: #111827;
@@ -112,8 +145,8 @@
 <body>
 <div class="container">
     <div class="header">
-        <h1>Match Fitstock (v2.3)</h1>
-        <p>Identificação de empresas por subcategoria e criação de negociação.</p>
+        <h1>Match Fitstock (v3.0 - Produção)</h1>
+        <p>Identificação de empresas, registro de inteligência e criação de negociação.</p>
         <div id="status" class="status loading">Inicializando widget...</div>
     </div>
 
@@ -130,7 +163,7 @@
                         <th>Contato Selecionado</th>
                         <th>Telefone</th>
                         <th>Subcategoria</th>
-                        <th>Ação</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody">
@@ -215,13 +248,76 @@
                     <td>${escapeHtml(empresa.telefone)}</td>
                     <td><span class="tag">${escapeHtml(empresa.subcategoria)}</span></td>
                     <td>
-                        <button class="btn-action" onclick="criarNegociacao('${empresa.id}', '${escapeHtml(empresa.nome)}')">
-                            Criar Negociação
-                        </button>
+                        <div class="action-group">
+                            <button class="btn-usa" title="Registrar que usa o produto" onclick="registrarUso('${empresa.id}', 'Usa')">
+                                Usa
+                            </button>
+                            <button class="btn-nao-usa" title="Registrar que não usa o produto" onclick="registrarUso('${empresa.id}', 'Não Usa')">
+                                Não Usa
+                            </button>
+                            <button class="btn-action" title="Criar nova Oportunidade" onclick="criarNegociacao('${empresa.id}', '${escapeHtml(empresa.nome)}')">
+                                Criar Negociação
+                            </button>
+                        </div>
+                        <span id="badge_${empresa.id}" class="status-badge"></span>
                     </td>
                 </tr>
             `;
         }).join("");
+    }
+
+    async function registrarUso(empresaId, statusUso) {
+        if (!contextData || !contextData.produto_id) {
+            alert("Informações do produto de interesse não disponíveis.");
+            return;
+        }
+
+        log("Registrando Inteligência de Mercado: Empresa " + empresaId + " -> Status: " + statusUso);
+        setStatus("Registrando status na Conta e no Inteligência de Mercado...", "loading");
+
+        const payload = {
+            empresa_id: empresaId,
+            produto_id: contextData.produto_id,
+            status_uso: statusUso,
+            opp_id: currentOppId
+        };
+
+        const reqData = {
+            arguments: JSON.stringify({
+                action: "registrar_uso",
+                payload: payload
+            })
+        };
+
+        try {
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+
+            let outputRaw = response.output || (response.details && response.details.output);
+            let output = outputRaw;
+
+            if (typeof outputRaw === "string") {
+                try { output = JSON.parse(outputRaw); } catch (e) {}
+            }
+
+            if (output && output.status === "success") {
+                setStatus("Status (" + statusUso + ") gravado com sucesso!", "success");
+                log("Sucesso ao gravar inteligência para a empresa " + empresaId);
+
+                const badge = document.getElementById("badge_" + empresaId);
+                if (badge) {
+                    badge.textContent = "Status: " + statusUso;
+                    badge.style.display = "inline-block";
+                    badge.style.background = statusUso === "Usa" ? "#d1fae5" : "#fee2e2";
+                    badge.style.color = statusUso === "Usa" ? "#065f46" : "#991b1b";
+                }
+            } else {
+                throw new Error((output && output.message) || "Falha ao gravar inteligência.");
+            }
+
+        } catch (err) {
+            log("Erro ao registrar inteligência: " + err.message);
+            setStatus("Erro ao salvar status de uso.", "error");
+        }
     }
 
     async function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
@@ -298,7 +394,6 @@
                 setStatus("Negociação criada com sucesso! Redirecionando...", "success");
                 log("Sucesso! ID da Negociação: " + output.deal_id);
 
-                // Abre a página do registro criado
                 ZOHO.CRM.UI.Record.open({
                     Entity: "Deals",
                     RecordID: output.deal_id
@@ -371,7 +466,7 @@
         ZOHO.embeddedApp.init();
     }
 
-    log("Widget v2.3 carregado na janela.");
+    log("Widget v3.0 (Produção) carregado.");
     registrarZoho();
 </script>
 </body>
