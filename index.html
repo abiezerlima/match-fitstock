@@ -223,6 +223,13 @@
         /* ESTILOS BUSCA AVANÇADA */
         .busca-modal { max-width: 640px; }
         .busca-tabs-info { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+        .busca-scope-selector {
+            display: flex; gap: 10px; align-items: center; margin-bottom: 12px;
+            font-size: 12px; font-weight: 600; color: #334155;
+        }
+        .busca-scope-selector select {
+            padding: 5px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;
+        }
         .busca-texto-livre {
             width: 100%; padding: 8px 10px; border-radius: 6px;
             border: 1px solid #cbd5e1; font-size: 13px; margin-bottom: 10px;
@@ -279,7 +286,6 @@
                 <h1>Match Fitstock (v4.0)</h1>
                 <p>Mapeamento de inteligência de mercado, gestão de empresas e criação de oportunidades.</p>
             </div>
-            <!-- Chamar o modal correto de Busca Avançada -->
             <button class="btn-add-empresa" onclick="abrirBuscaAvancada('empresa')">
                 + Adicionar Empresa
             </button>
@@ -333,6 +339,15 @@
 <div id="modalBuscaAvancada" class="modal-overlay">
     <div class="modal busca-modal">
         <h3 id="buscaAvancadaTitulo">Buscar</h3>
+        
+        <div id="buscaScopeWrapper" class="busca-scope-selector" style="display:none;">
+            <span>Filtrar por campos de:</span>
+            <select id="selectScopeModulo" onchange="alterarModuloBuscaAdicionar(this.value)">
+                <option value="Accounts">Empresas (Accounts)</option>
+                <option value="Contacts">Contatos (Contacts)</option>
+            </select>
+        </div>
+
         <p id="buscaAvancadaInfo" class="busca-tabs-info"></p>
 
         <input type="text" id="buscaTextoLivre" class="busca-texto-livre"
@@ -633,22 +648,30 @@
 
     function abrirBuscaAvancada(contexto, empresaLinhaId, empresaLinhaNome) {
         buscaAvancada.contexto = contexto;
-        buscaAvancada.modulo = (contexto === "empresa") ? "Accounts" : "Contacts";
         buscaAvancada.empresaLinhaId = empresaLinhaId || null;
         buscaAvancada.pagina = 1;
         buscaAvancada.registros = [];
         buscaAvancada.temMais = false;
 
-        document.getElementById("buscaAvancadaTitulo").textContent =
-            contexto === "empresa" ? "Buscar Empresa (Accounts)" : "Buscar Contato (Contacts)";
-        document.getElementById("buscaAvancadaInfo").textContent =
-            contexto === "contato" && empresaLinhaNome
+        const scopeWrapper = document.getElementById("buscaScopeWrapper");
+
+        if (contexto === "empresa") {
+            buscaAvancada.modulo = "Accounts";
+            scopeWrapper.style.display = "flex";
+            document.getElementById("selectScopeModulo").value = "Accounts";
+            document.getElementById("buscaAvancadaTitulo").textContent = "Adicionar Empresa";
+            document.getElementById("buscaAvancadaInfo").textContent = "Busque por campos de Empresas ou troque a aba acima para buscar por Contatos vinculados.";
+        } else {
+            buscaAvancada.modulo = "Contacts";
+            scopeWrapper.style.display = "none";
+            document.getElementById("buscaAvancadaTitulo").textContent = "Buscar Contato (Contacts)";
+            document.getElementById("buscaAvancadaInfo").textContent = empresaLinhaNome
                 ? "Trocando o contato da empresa: " + empresaLinhaNome + ". Use os filtros para restringir por qualquer campo de Contatos."
-                : "Use os filtros para restringir por qualquer campo de " + (contexto === "empresa" ? "Empresas" : "Contatos") + ".";
+                : "Use os filtros para restringir por qualquer campo de Contatos.";
+        }
 
         document.getElementById("buscaTextoLivre").value = "";
         document.getElementById("filtrosContainer").innerHTML = "";
-
         filtrosAtivos = [];
 
         document.getElementById("modalBuscaAvancada").style.display = "flex";
@@ -657,6 +680,18 @@
             if (contexto === "contato" && empresaLinhaNome) {
                 adicionarLinhaFiltro("Account_Name", "starts_with", empresaLinhaNome);
             }
+            executarBuscaAvancada(true);
+        });
+    }
+
+    function alterarModuloBuscaAdicionar(novoModulo) {
+        buscaAvancada.modulo = novoModulo;
+        buscaAvancada.pagina = 1;
+        buscaAvancada.registros = [];
+        document.getElementById("filtrosContainer").innerHTML = "";
+        filtrosAtivos = [];
+
+        carregarCamposBuscaAvancada().then(function() {
             executarBuscaAvancada(true);
         });
     }
@@ -875,7 +910,7 @@
             return `
                 <div class="busca-resultado-item" onclick='selecionarResultadoBusca(${JSON.stringify(reg)})'>
                     <span class="busca-resultado-nome">${escapeHtml(reg.nome)}</span>
-                    <span class="busca-resultado-sub">${escapeHtml(reg.empresa_nome || "")} ${reg.email ? "· " + escapeHtml(reg.email) : ""}</span>
+                    <span class="busca-resultado-sub">${escapeHtml(reg.empresa_nome || "Sem empresa associada")} ${reg.email ? "· " + escapeHtml(reg.email) : ""}</span>
                 </div>`;
         }).join("");
     }
@@ -883,10 +918,20 @@
     function selecionarResultadoBusca(registro) {
         if (buscaAvancada.contexto === "empresa") {
             fecharBuscaAvancada();
-            confirmarAdicionarEmpresaId(registro.id);
+            
+            // Se buscou em Accounts, pega reg.id. Se buscou em Contacts, pega reg.empresa_id
+            const empresaIdParaAdicionar = (buscaAvancada.modulo === "Accounts") ? registro.id : registro.empresa_id;
+            
+            if (!empresaIdParaAdicionar) {
+                alert("O contato selecionado não possui uma Empresa (Conta) vinculada no CRM.");
+                return;
+            }
+
+            confirmarAdicionarEmpresaId(empresaIdParaAdicionar);
             return;
         }
 
+        // contexto === "contato": atualiza contato da linha da tabela
         const empresaId = buscaAvancada.empresaLinhaId;
         const hiddenInput = document.getElementById("select_contact_" + empresaId);
         const label = document.getElementById("contact_label_" + empresaId);
