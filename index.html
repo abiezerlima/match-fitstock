@@ -220,7 +220,6 @@
             word-break: break-word;
         }
 
-        /* ESTILOS BUSCA AVANÇADA COM ABAS DESTACADAS */
         .busca-modal { max-width: 640px; }
         .busca-tabs-container {
             display: flex;
@@ -357,12 +356,10 @@
     </div>
 </div>
 
-<!-- MODAL DE BUSCA AVANÇADA DINÂMICA COM ABAS -->
 <div id="modalBuscaAvancada" class="modal-overlay">
     <div class="modal busca-modal">
         <h3 id="buscaAvancadaTitulo">Adicionar Empresa ao Match</h3>
         
-        <!-- ABAS DESTACADAS PARA TROCAR DE MÓDULO -->
         <div id="buscaTabsContainer" class="busca-tabs-container">
             <button id="tabAccounts" class="tab-btn active" onclick="alterarModuloBusca('Accounts')">
                 🏢 Filtrar por Empresas (Accounts)
@@ -656,7 +653,7 @@
         }
     }
 
-    /* BUSCA AVANÇADA DINÂMICA (LÓGICA DAS ABAS) */
+    /* BUSCA AVANÇADA DINÂMICA COMPATÍVEL COM NOME E SOBRENOME EM CONTACTS */
     const buscaAvancada = {
         modulo: null,
         contexto: null,
@@ -712,11 +709,9 @@
         buscaAvancada.pagina = 1;
         buscaAvancada.registros = [];
         
-        // Atualiza estilo visual das Abas
         document.getElementById("tabAccounts").className = (novoModulo === "Accounts") ? "tab-btn active" : "tab-btn";
         document.getElementById("tabContacts").className = (novoModulo === "Contacts") ? "tab-btn active" : "tab-btn";
 
-        // Atualiza textos
         if (novoModulo === "Accounts") {
             document.getElementById("buscaAvancadaInfo").textContent = "Filtre por qualquer campo cadastrado em Empresas (Accounts).";
             document.getElementById("buscaTextoLivre").placeholder = "Buscar por nome da empresa...";
@@ -896,7 +891,17 @@
         }
 
         const textoLivre = document.getElementById("buscaTextoLivre").value.trim();
-        const filtrosValidos = filtrosAtivos.filter(f => f && f.campo && f.operador && f.valor);
+        let filtrosValidos = filtrosAtivos.filter(f => f && f.campo && f.operador && f.valor);
+
+        // Se estiver buscando em Contacts e houver texto livre, insere filtro dinâmico por First_Name / Full_Name
+        if (buscaAvancada.modulo === "Contacts" && textoLivre && !filtrosValidos.length) {
+            filtrosValidos.push({
+                campo: "First_Name",
+                operador: "starts_with",
+                valor: textoLivre,
+                valor2: ""
+            });
+        }
 
         const payload = {
             modulo: buscaAvancada.modulo,
