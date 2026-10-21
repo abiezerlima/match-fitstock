@@ -130,14 +130,6 @@
             font-size: 11px;
             font-weight: 500;
         }
-        select.contact-select {
-            width: 100%;
-            padding: 6px 8px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            background: #fff;
-            font-size: 12px;
-        }
         .action-group {
             display: flex;
             gap: 5px;
@@ -228,80 +220,42 @@
             word-break: break-word;
         }
 
-        /* --- ESTILOS BLOCO 1 (BUSCA AVANÇADA) --- */
-        .busca-modal {
-            max-width: 640px;
-        }
-        .busca-tabs-info {
-            font-size: 12px;
-            color: #64748b;
-            margin-bottom: 10px;
-        }
+        /* ESTILOS BUSCA AVANÇADA */
+        .busca-modal { max-width: 640px; }
+        .busca-tabs-info { font-size: 12px; color: #64748b; margin-bottom: 10px; }
         .busca-texto-livre {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            font-size: 13px;
-            margin-bottom: 10px;
+            width: 100%; padding: 8px 10px; border-radius: 6px;
+            border: 1px solid #cbd5e1; font-size: 13px; margin-bottom: 10px;
         }
         .filtros-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 10px;
-            max-height: 180px;
-            overflow-y: auto;
+            display: flex; flex-direction: column; gap: 8px;
+            margin-bottom: 10px; max-height: 180px; overflow-y: auto;
         }
         .filtro-linha {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
-            gap: 6px;
-            align-items: center;
+            display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 6px; align-items: center;
         }
         .filtro-linha select, .filtro-linha input {
-            padding: 6px 8px;
-            border-radius: 6px;
-            border: 1px solid #cbd5e1;
-            font-size: 12px;
-            width: 100%;
+            padding: 6px 8px; border-radius: 6px;
+            border: 1px solid #cbd5e1; font-size: 12px; width: 100%;
         }
         .filtro-remover {
-            background: #f3f4f6;
-            color: #9ca3af;
-            border: 1px solid #e5e7eb;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            padding: 6px 8px;
+            background: #f3f4f6; color: #9ca3af; border: 1px solid #e5e7eb;
+            border-radius: 5px; cursor: pointer; font-size: 12px; padding: 6px 8px;
         }
         .filtro-remover:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
         .btn-add-filtro {
-            background: #f1f5f9;
-            color: #334155;
-            border: 1px dashed #cbd5e1;
-            border-radius: 6px;
-            padding: 6px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-bottom: 12px;
+            background: #f1f5f9; color: #334155; border: 1px dashed #cbd5e1;
+            border-radius: 6px; padding: 6px 10px; font-size: 12px; cursor: pointer; margin-bottom: 12px;
         }
         .btn-add-filtro:hover { background: #e2e8f0; }
         .busca-resultados {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            max-height: 260px;
-            overflow-y: auto;
-            margin-bottom: 10px;
+            border: 1px solid #e2e8f0; border-radius: 8px;
+            max-height: 260px; overflow-y: auto; margin-bottom: 10px;
         }
         .busca-resultado-item {
-            padding: 9px 12px;
-            border-bottom: 1px solid #f1f5f9;
-            cursor: pointer;
-            font-size: 13px;
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
+            padding: 9px 12px; border-bottom: 1px solid #f1f5f9;
+            cursor: pointer; font-size: 13px; display: flex; flex-direction: column; gap: 1px;
         }
         .busca-resultado-item:hover { background: #f8fafc; }
         .busca-resultado-item:last-child { border-bottom: none; }
@@ -309,16 +263,9 @@
         .busca-resultado-sub { font-size: 11px; color: #64748b; }
         .busca-vazio { padding: 20px; text-align: center; color: #94a3b8; font-size: 13px; }
         .btn-carregar-mais {
-            width: 100%;
-            background: #eff6ff;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
-            border-radius: 6px;
-            padding: 8px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 10px;
+            width: 100%; background: #eff6ff; color: #1e40af;
+            border: 1px solid #bfdbfe; border-radius: 6px; padding: 8px;
+            font-size: 12px; font-weight: 600; cursor: pointer; margin-bottom: 10px;
         }
         .btn-carregar-mais:hover { background: #dbeafe; }
         .btn-carregar-mais:disabled { opacity: 0.5; cursor: default; }
@@ -332,7 +279,7 @@
                 <h1>Match Fitstock (v4.0)</h1>
                 <p>Mapeamento de inteligência de mercado, gestão de empresas e criação de oportunidades.</p>
             </div>
-            <!-- Botão modificado para abrir busca avançada -->
+            <!-- Chamar o modal correto de Busca Avançada -->
             <button class="btn-add-empresa" onclick="abrirBuscaAvancada('empresa')">
                 + Adicionar Empresa
             </button>
@@ -382,22 +329,7 @@
     </div>
 </div>
 
-<!-- MODAL ADICIONAR EMPRESA (MANTIDO PARA COMPATIBILIDADE) -->
-<div id="modalAdd" class="modal-overlay">
-    <div class="modal">
-        <h3>Adicionar Empresa Sugerida</h3>
-        <p style="font-size: 13px; color: #64748b; margin-bottom: 12px;">Selecione uma Conta cadastrada no CRM para adicionar a este Match:</p>
-        <select id="selectEmpresaAdd" class="contact-select" style="padding: 8px; font-size: 13px;">
-            <option value="">Carregando empresas...</option>
-        </select>
-        <div class="modal-buttons">
-            <button class="btn-delete" onclick="fecharModalAdicionar()">Cancelar</button>
-            <button class="btn-action" onclick="confirmarAdicionarEmpresa()">Adicionar</button>
-        </div>
-    </div>
-</div>
-
-<!-- BLOCO 2 — HTML MODAL BUSCA AVANÇADA -->
+<!-- MODAL DE BUSCA AVANÇADA DINÂMICA -->
 <div id="modalBuscaAvancada" class="modal-overlay">
     <div class="modal busca-modal">
         <h3 id="buscaAvancadaTitulo">Buscar</h3>
@@ -460,7 +392,6 @@
         ZOHO.CRM.UI.Record.open({ Entity: entity, RecordID: recordId });
     }
 
-    /* renderResults() ajustado para a nova estrutura com botão "Trocar" e input hidden */
     function renderResults(empresas) {
         if (!empresas || !Array.isArray(empresas) || empresas.length === 0) {
             resultsBody.innerHTML = `
@@ -527,17 +458,6 @@
         }).join("");
     }
 
-    function atualizarLinkEmail(empresaId) {
-        const select = document.getElementById("select_contact_" + empresaId);
-        if (!select) return;
-        const option = select.options[select.selectedIndex];
-        const email = option ? option.getAttribute("data-email") : "";
-        const emailSpan = document.getElementById("email_link_" + empresaId);
-        if (emailSpan) {
-            emailSpan.innerHTML = email ? `<a class="link-email" href="mailto:${escapeHtml(email)}" title="Enviar e-mail">✉️ Email</a>` : "";
-        }
-    }
-
     function aplicarFiltros() {
         const search = document.getElementById("searchInput").value.toLowerCase().trim();
         const statusVal = document.getElementById("statusFilter").value;
@@ -558,8 +478,8 @@
     async function registrarUso(empresaId, statusUso) {
         if (!contextData || !contextData.produto_id) return;
 
-        const select = document.getElementById("select_contact_" + empresaId);
-        const contatoId = select ? select.value : "";
+        const hiddenInput = document.getElementById("select_contact_" + empresaId);
+        const contatoId = hiddenInput ? hiddenInput.value : "";
 
         setStatus("Registrando inteligência...", "loading");
 
@@ -578,7 +498,6 @@
             if (output && output.status === "success") {
                 setStatus("Status (" + statusUso + ") registrado e salvo no CRM!", "success");
                 
-                // Atualizar objeto local
                 const emp = listaEmpresasOriginal.find(e => e.id === empresaId);
                 if (emp) emp.status_persistido = statusUso;
                 aplicarFiltros();
@@ -601,7 +520,7 @@
         };
 
         try {
-            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
             listaEmpresasOriginal = listaEmpresasOriginal.filter(e => e.id !== empresaId);
             aplicarFiltros();
             setStatus("Empresa removida com sucesso.", "success");
@@ -610,54 +529,9 @@
         }
     }
 
-    async function abrirModalAdicionar() {
-        document.getElementById("modalAdd").style.display = "flex";
-        const select = document.getElementById("selectEmpresaAdd");
-        select.innerHTML = "<option value=''>Carregando empresas...</option>";
-
-        const reqData = { arguments: JSON.stringify({ action: "buscar_todas_contas" }) };
-        try {
-            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-            let output = response.output || (response.details && response.details.output);
-            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
-
-            if (output && Array.isArray(output.contas)) {
-                select.innerHTML = output.contas.map(c => `<option value="${c.id}">${escapeHtml(c.nome)}</option>`).join("");
-            }
-        } catch (e) {
-            select.innerHTML = "<option value=''>Erro ao carregar empresas</option>";
-        }
-    }
-
-    function fecharModalAdicionar() {
-        document.getElementById("modalAdd").style.display = "none";
-    }
-
-    async function confirmarAdicionarEmpresa() {
-        const empresaId = document.getElementById("selectEmpresaAdd").value;
-        if (!empresaId) return;
-
-        fecharModalAdicionar();
-        setStatus("Adicionando empresa...", "loading");
-
-        const reqData = {
-            arguments: JSON.stringify({
-                action: "adicionar_empresa",
-                payload: { empresa_id: empresaId, opp_id: currentOppId }
-            })
-        };
-
-        try {
-            await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-            carregarEmpresas();
-        } catch (err) {
-            setStatus("Erro ao adicionar empresa.", "error");
-        }
-    }
-
     async function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
-        const selectElement = document.getElementById("select_contact_" + empresaDestinoId);
-        const contatoDestinoId = selectElement ? selectElement.value : null;
+        const hiddenInput = document.getElementById("select_contact_" + empresaDestinoId);
+        const contatoDestinoId = hiddenInput ? hiddenInput.value : null;
 
         if (!contatoDestinoId) {
             alert("Selecione um contato para a negociação.");
@@ -743,17 +617,19 @@
         }
     }
 
-    /* --- BLOCO 3 (JS BUSCA AVANÇADA) --- */
+    /* BUSCA AVANÇADA DINÂMICA */
     const buscaAvancada = {
-        modulo: null,            // "Accounts" | "Contacts"
-        contexto: null,          // "empresa" | "contato"
-        empresaLinhaId: null,    // id da empresa da linha, quando contexto === "contato"
-        campos: { Accounts: null, Contacts: null }, // cache de metadados por módulo
+        modulo: null,
+        contexto: null,
+        empresaLinhaId: null,
+        campos: { Accounts: null, Contacts: null },
         pagina: 1,
         registros: [],
         temMais: false,
         debounceTimer: null
     };
+
+    let filtrosAtivos = [];
 
     function abrirBuscaAvancada(contexto, empresaLinhaId, empresaLinhaNome) {
         buscaAvancada.contexto = contexto;
@@ -773,7 +649,6 @@
         document.getElementById("buscaTextoLivre").value = "";
         document.getElementById("filtrosContainer").innerHTML = "";
 
-        // Reset filtros ativos locais
         filtrosAtivos = [];
 
         document.getElementById("modalBuscaAvancada").style.display = "flex";
@@ -792,7 +667,7 @@
 
     async function carregarCamposBuscaAvancada() {
         const modulo = buscaAvancada.modulo;
-        if (buscaAvancada.campos[modulo]) return; // já em cache
+        if (buscaAvancada.campos[modulo]) return;
 
         const reqData = { arguments: JSON.stringify({ action: "obter_campos", payload: { modulo: modulo } }) };
         try {
@@ -810,7 +685,7 @@
         if (["date","datetime"].includes(tipo)) return [["equals","Igual a"], ["between","Entre"]];
         if (tipo === "boolean") return [["equals","Igual a"]];
         if (["picklist","multiselectpicklist"].includes(tipo)) return [["equals","Igual a"]];
-        return [["starts_with","Começa com"], ["equals","Igual a"]]; // texto, email, phone, etc.
+        return [["starts_with","Começa com"], ["equals","Igual a"]];
     }
 
     function inputHtmlParaCampo(idx, campoMeta, operador) {
@@ -844,8 +719,6 @@
         }
         return `<input type="${inputType}" id="filtroValor_${idx}" placeholder="Valor" onchange="atualizarValorFiltro(${idx})">`;
     }
-
-    let filtrosAtivos = []; // [{campo, operador, valor, valor2}]
 
     function adicionarLinhaFiltro(campoPreSelecionado, operadorPreSelecionado, valorPreSelecionado) {
         const idx = filtrosAtivos.length;
@@ -1014,7 +887,6 @@
             return;
         }
 
-        // contexto === "contato": atualiza a linha da tabela sem chamada extra ao backend
         const empresaId = buscaAvancada.empresaLinhaId;
         const hiddenInput = document.getElementById("select_contact_" + empresaId);
         const label = document.getElementById("contact_label_" + empresaId);
@@ -1031,7 +903,6 @@
         fecharBuscaAvancada();
     }
 
-    // Adaptador: reaproveita a action "adicionar_empresa" já existente no backend
     async function confirmarAdicionarEmpresaId(empresaId) {
         if (!empresaId) return;
         setStatus("Adicionando empresa...", "loading");
