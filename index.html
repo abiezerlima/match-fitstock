@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock - v4.9 Produção</title>
+    <title>Match Fitstock - v5.3 Produção</title>
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -13,7 +13,7 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #0f172a; }
         .header p { margin: 0; color: #64748b; font-size: 13px; }
-        .btn-add-empresa { background: #059669; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .btn-add-empresa { background: #059669; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .filter-bar { display: flex; gap: 10px; margin-top: 14px; }
         .filter-input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; }
         .status { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px; }
@@ -34,7 +34,7 @@
         .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px; }
         .action-group { display: flex; gap: 5px; align-items: center; }
         .btn-action { background: #2563eb; color: #fff; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
-        .debug { margin-top: 16px; background: #0f172a; color: #38bdf8; border-radius: 8px; padding: 14px; font-family: Consolas, Monaco, monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; }
+        .btn-delete { background: #f3f4f6; color: #9ca3af; border: 1px solid #e5e7eb; padding: 6px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -42,7 +42,7 @@
     <div class="header">
         <div class="header-top">
             <div>
-                <h1>Match Fitstock (v4.9)</h1>
+                <h1>Match Fitstock (v5.3)</h1>
                 <p>Mapeamento de inteligência de mercado e oportunidades.</p>
             </div>
         </div>
@@ -65,30 +65,22 @@
                         <th>Contato Selecionado</th>
                         <th>Telefone</th>
                         <th>Subcategoria</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="resultsBody">
-                    <tr><td colspan="4" class="empty">Aguardando carregamento...</td></tr>
+                    <tr><td colspan="5" class="empty">Aguardando carregamento...</td></tr>
                 </tbody>
             </table>
         </div>
-    </div>
-
-    <div class="debug">
-        <div style="color: #fff; font-weight: 700; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px;">Console de Logs Backend</div>
-        <div id="debug">Carregando...</div>
     </div>
 </div>
 
 <script>
     const FUNCTION_API_NAME = "buscarempresaswidget";
     let currentOppId = null;
+    let contextData = null;
     let listaEmpresasOriginal = [];
-
-    function log(message) {
-        const time = new Date().toLocaleTimeString("pt-BR");
-        document.getElementById("debug").textContent += "\n[" + time + "] " + message;
-    }
 
     function setStatus(message, type) {
         const el = document.getElementById("status");
@@ -105,7 +97,7 @@
         const countElement = document.getElementById("count");
 
         if (!empresas || empresas.length === 0) {
-            resultsBody.innerHTML = `<tr><td colspan="4" class="empty">Nenhuma empresa encontrada com os filtros aplicados.</td></tr>`;
+            resultsBody.innerHTML = `<tr><td colspan="5" class="empty">Nenhuma empresa encontrada com os filtros aplicados.</td></tr>`;
             countElement.textContent = "0 empresas";
             return;
         }
@@ -121,6 +113,11 @@
                     <td>${emp.contato_persistido_nome || 'Nenhum contato'} ${emailBtn}</td>
                     <td>${emp.telefone || '-'}</td>
                     <td><span class="tag">${emp.subcategoria || '-'}</span></td>
+                    <td>
+                        <div class="action-group">
+                            <button class="btn-action" onclick="criarNegociacao('${emp.id}', '${emp.nome}')">Criar Negociação</button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join("");
@@ -134,6 +131,33 @@
         renderResults(filtrados);
     }
 
+    async function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
+        if (!contextData) return;
+        setStatus("Criando negociação no CRM...", "loading");
+
+        const dealName = `[${contextData.produto_nome || 'Oportunidade'}] x ${empresaDestinoNome}`;
+        const payloadCriacao = {
+            "Deal_Name": dealName,
+            "Nome_Produto": contextData.produto_id ? { "id": String(contextData.produto_id) } : null,
+            "Account_Name": { "id": String(empresaDestinoId) }
+        };
+
+        const reqData = { arguments: JSON.stringify({ action: "criar_negocio", payload: payloadCriacao }) };
+
+        try {
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            let output = response.output || (response.details && response.details.output);
+            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
+
+            if (output && output.status === "success" && output.deal_id) {
+                setStatus("Negociação criada com sucesso!", "success");
+                ZOHO.CRM.UI.Record.open({ Entity: "Deals", RecordID: output.deal_id });
+            }
+        } catch (err) {
+            setStatus("Erro ao criar negociação.", "error");
+        }
+    }
+
     async function carregarEmpresas() {
         if (!currentOppId) return;
         setStatus("Executando busca...", "loading");
@@ -145,11 +169,8 @@
             let output = response.output || (response.details && response.details.output);
             if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
 
-            if (output && output.logs) {
-                output.logs.forEach(function(l) { log(l); });
-            }
-
             if (output && Array.isArray(output.empresas)) {
+                contextData = output;
                 listaEmpresasOriginal = output.empresas;
                 renderResults(listaEmpresasOriginal);
                 setStatus("Match concluído com sucesso.", "success");
@@ -158,7 +179,6 @@
                 setStatus("Nenhuma empresa encontrada.", "error");
             }
         } catch (error) {
-            log("ERRO NA EXECUÇÃO: " + JSON.stringify(error));
             setStatus("Erro grave de execução.", "error");
         }
     }
