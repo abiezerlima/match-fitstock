@@ -202,7 +202,7 @@
             border-radius: 10px;
             padding: 20px;
             width: 90%;
-            max-width: 450px;
+            max-width: 640px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
         .modal h3 { margin: 0 0 12px 0; font-size: 16px; }
@@ -220,16 +220,36 @@
             word-break: break-word;
         }
 
-        /* ESTILOS BUSCA AVANÇADA */
+        /* ESTILOS BUSCA AVANÇADA COM ABAS DESTACADAS */
         .busca-modal { max-width: 640px; }
+        .busca-tabs-container {
+            display: flex;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .tab-btn.active {
+            background: #059669;
+            color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
         .busca-tabs-info { font-size: 12px; color: #64748b; margin-bottom: 10px; }
-        .busca-scope-selector {
-            display: flex; gap: 10px; align-items: center; margin-bottom: 12px;
-            font-size: 12px; font-weight: 600; color: #334155;
-        }
-        .busca-scope-selector select {
-            padding: 5px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 12px;
-        }
         .busca-texto-livre {
             width: 100%; padding: 8px 10px; border-radius: 6px;
             border: 1px solid #cbd5e1; font-size: 13px; margin-bottom: 10px;
@@ -237,6 +257,8 @@
         .filtros-container {
             display: flex; flex-direction: column; gap: 8px;
             margin-bottom: 10px; max-height: 180px; overflow-y: auto;
+            position: relative;
+            z-index: 5;
         }
         .filtro-linha {
             display: grid; grid-template-columns: 1fr 1fr 1fr auto;
@@ -258,7 +280,7 @@
         .btn-add-filtro:hover { background: #e2e8f0; }
         .busca-resultados {
             border: 1px solid #e2e8f0; border-radius: 8px;
-            max-height: 260px; overflow-y: auto; margin-bottom: 10px;
+            max-height: 240px; overflow-y: auto; margin-bottom: 10px;
         }
         .busca-resultado-item {
             padding: 9px 12px; border-bottom: 1px solid #f1f5f9;
@@ -335,17 +357,19 @@
     </div>
 </div>
 
-<!-- MODAL DE BUSCA AVANÇADA DINÂMICA -->
+<!-- MODAL DE BUSCA AVANÇADA DINÂMICA COM ABAS -->
 <div id="modalBuscaAvancada" class="modal-overlay">
     <div class="modal busca-modal">
-        <h3 id="buscaAvancadaTitulo">Buscar</h3>
+        <h3 id="buscaAvancadaTitulo">Adicionar Empresa ao Match</h3>
         
-        <div id="buscaScopeWrapper" class="busca-scope-selector" style="display:none;">
-            <span>Filtrar por campos de:</span>
-            <select id="selectScopeModulo" onchange="alterarModuloBuscaAdicionar(this.value)">
-                <option value="Accounts">Empresas (Accounts)</option>
-                <option value="Contacts">Contatos (Contacts)</option>
-            </select>
+        <!-- ABAS DESTACADAS PARA TROCAR DE MÓDULO -->
+        <div id="buscaTabsContainer" class="busca-tabs-container">
+            <button id="tabAccounts" class="tab-btn active" onclick="alterarModuloBusca('Accounts')">
+                🏢 Filtrar por Empresas (Accounts)
+            </button>
+            <button id="tabContacts" class="tab-btn" onclick="alterarModuloBusca('Contacts')">
+                👤 Filtrar por Contatos (Contacts)
+            </button>
         </div>
 
         <p id="buscaAvancadaInfo" class="busca-tabs-info"></p>
@@ -632,7 +656,7 @@
         }
     }
 
-    /* BUSCA AVANÇADA DINÂMICA */
+    /* BUSCA AVANÇADA DINÂMICA (LÓGICA DAS ABAS) */
     const buscaAvancada = {
         modulo: null,
         contexto: null,
@@ -653,41 +677,54 @@
         buscaAvancada.registros = [];
         buscaAvancada.temMais = false;
 
-        const scopeWrapper = document.getElementById("buscaScopeWrapper");
+        const tabsContainer = document.getElementById("buscaTabsContainer");
 
         if (contexto === "empresa") {
-            buscaAvancada.modulo = "Accounts";
-            scopeWrapper.style.display = "flex";
-            document.getElementById("selectScopeModulo").value = "Accounts";
-            document.getElementById("buscaAvancadaTitulo").textContent = "Adicionar Empresa";
-            document.getElementById("buscaAvancadaInfo").textContent = "Busque por campos de Empresas ou troque a aba acima para buscar por Contatos vinculados.";
+            tabsContainer.style.display = "flex";
+            document.getElementById("buscaAvancadaTitulo").textContent = "Adicionar Empresa ao Match";
+            alterarModuloBusca("Accounts");
         } else {
+            tabsContainer.style.display = "none";
+            document.getElementById("buscaAvancadaTitulo").textContent = "Trocar Contato Selecionado";
             buscaAvancada.modulo = "Contacts";
-            scopeWrapper.style.display = "none";
-            document.getElementById("buscaAvancadaTitulo").textContent = "Buscar Contato (Contacts)";
+            
             document.getElementById("buscaAvancadaInfo").textContent = empresaLinhaNome
-                ? "Trocando o contato da empresa: " + empresaLinhaNome + ". Use os filtros para restringir por qualquer campo de Contatos."
-                : "Use os filtros para restringir por qualquer campo de Contatos.";
+                ? "Buscando contatos para a empresa: " + empresaLinhaNome
+                : "Use os filtros para restringir a busca de Contatos.";
+
+            document.getElementById("buscaTextoLivre").value = "";
+            document.getElementById("filtrosContainer").innerHTML = "";
+            filtrosAtivos = [];
+
+            carregarCamposBuscaAvancada().then(function() {
+                if (empresaLinhaNome) {
+                    adicionarLinhaFiltro("Account_Name", "starts_with", empresaLinhaNome);
+                }
+                executarBuscaAvancada(true);
+            });
         }
 
-        document.getElementById("buscaTextoLivre").value = "";
-        document.getElementById("filtrosContainer").innerHTML = "";
-        filtrosAtivos = [];
-
         document.getElementById("modalBuscaAvancada").style.display = "flex";
-
-        carregarCamposBuscaAvancada().then(function() {
-            if (contexto === "contato" && empresaLinhaNome) {
-                adicionarLinhaFiltro("Account_Name", "starts_with", empresaLinhaNome);
-            }
-            executarBuscaAvancada(true);
-        });
     }
 
-    function alterarModuloBuscaAdicionar(novoModulo) {
+    function alterarModuloBusca(novoModulo) {
         buscaAvancada.modulo = novoModulo;
         buscaAvancada.pagina = 1;
         buscaAvancada.registros = [];
+        
+        // Atualiza estilo visual das Abas
+        document.getElementById("tabAccounts").className = (novoModulo === "Accounts") ? "tab-btn active" : "tab-btn";
+        document.getElementById("tabContacts").className = (novoModulo === "Contacts") ? "tab-btn active" : "tab-btn";
+
+        // Atualiza textos
+        if (novoModulo === "Accounts") {
+            document.getElementById("buscaAvancadaInfo").textContent = "Filtre por qualquer campo cadastrado em Empresas (Accounts).";
+            document.getElementById("buscaTextoLivre").placeholder = "Buscar por nome da empresa...";
+        } else {
+            document.getElementById("buscaAvancadaInfo").textContent = "Filtre por campos de Contatos (Contacts). A empresa associada ao contato será adicionada.";
+            document.getElementById("buscaTextoLivre").placeholder = "Buscar por nome do contato...";
+        }
+
         document.getElementById("filtrosContainer").innerHTML = "";
         filtrosAtivos = [];
 
@@ -919,7 +956,6 @@
         if (buscaAvancada.contexto === "empresa") {
             fecharBuscaAvancada();
             
-            // Se buscou em Accounts, pega reg.id. Se buscou em Contacts, pega reg.empresa_id
             const empresaIdParaAdicionar = (buscaAvancada.modulo === "Accounts") ? registro.id : registro.empresa_id;
             
             if (!empresaIdParaAdicionar) {
@@ -931,7 +967,6 @@
             return;
         }
 
-        // contexto === "contato": atualiza contato da linha da tabela
         const empresaId = buscaAvancada.empresaLinhaId;
         const hiddenInput = document.getElementById("select_contact_" + empresaId);
         const label = document.getElementById("contact_label_" + empresaId);
