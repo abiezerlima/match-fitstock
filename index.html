@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock - v4.8 Debug</title>
+    <title>Match Fitstock - v4.9 Produção</title>
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -13,10 +13,9 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #0f172a; }
         .header p { margin: 0; color: #64748b; font-size: 13px; }
-        .btn-add-empresa { background: #059669; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .btn-add-empresa { background: #059669; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
         .filter-bar { display: flex; gap: 10px; margin-top: 14px; }
         .filter-input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; }
-        .filter-select { padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; background: #fff; }
         .status { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px; }
         .status.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
         .status.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
@@ -31,8 +30,11 @@
         td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
         .empty { padding: 35px 20px; text-align: center; color: #64748b; font-size: 14px; }
         .link-crm { color: #2563eb; text-decoration: none; font-weight: 600; cursor: pointer; }
+        .link-email { color: #0284c7; text-decoration: none; font-size: 12px; margin-left: 4px; }
         .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px; }
-        .debug { margin-top: 16px; background: #0f172a; color: #38bdf8; border-radius: 8px; padding: 14px; font-family: Consolas, Monaco, monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 400px; overflow-y: auto; }
+        .action-group { display: flex; gap: 5px; align-items: center; }
+        .btn-action { background: #2563eb; color: #fff; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .debug { margin-top: 16px; background: #0f172a; color: #38bdf8; border-radius: 8px; padding: 14px; font-family: Consolas, Monaco, monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 300px; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -40,12 +42,12 @@
     <div class="header">
         <div class="header-top">
             <div>
-                <h1>Match Fitstock (v4.8 Debug)</h1>
-                <p>Mapeamento de inteligência de mercado e diagnósticos de execução.</p>
+                <h1>Match Fitstock (v4.9)</h1>
+                <p>Mapeamento de inteligência de mercado e oportunidades.</p>
             </div>
         </div>
         <div class="filter-bar">
-            <input type="text" id="searchInput" class="filter-input" placeholder="Buscar por nome da empresa..." oninput="aplicarFiltros()">
+            <input type="text" id="searchInput" class="filter-input" placeholder="Buscar por nome da empresa ou subcategoria..." oninput="aplicarFiltros()">
         </div>
         <div id="status" class="status loading">Inicializando widget...</div>
     </div>
@@ -73,14 +75,15 @@
     </div>
 
     <div class="debug">
-        <div style="color: #fff; font-weight: 700; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px;">Console de Debug / Logs Backend (Deluge)</div>
-        <div id="debug">Carregando logs...</div>
+        <div style="color: #fff; font-weight: 700; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px;">Console de Logs Backend</div>
+        <div id="debug">Carregando...</div>
     </div>
 </div>
 
 <script>
     const FUNCTION_API_NAME = "buscarempresaswidget";
     let currentOppId = null;
+    let listaEmpresasOriginal = [];
 
     function log(message) {
         const time = new Date().toLocaleTimeString("pt-BR");
@@ -93,9 +96,47 @@
         el.className = "status " + type;
     }
 
+    function abrirRegistroCRM(entity, recordId) {
+        ZOHO.CRM.UI.Record.open({ Entity: entity, RecordID: recordId });
+    }
+
+    function renderResults(empresas) {
+        const resultsBody = document.getElementById("resultsBody");
+        const countElement = document.getElementById("count");
+
+        if (!empresas || empresas.length === 0) {
+            resultsBody.innerHTML = `<tr><td colspan="4" class="empty">Nenhuma empresa encontrada com os filtros aplicados.</td></tr>`;
+            countElement.textContent = "0 empresas";
+            return;
+        }
+
+        countElement.textContent = empresas.length === 1 ? "1 empresa" : empresas.length + " empresas";
+        resultsBody.innerHTML = empresas.map(function(emp) {
+            const emailBtn = emp.contato_persistido_email 
+                ? `<a class="link-email" href="mailto:${emp.contato_persistido_email}">✉️ Email</a>` : '';
+
+            return `
+                <tr>
+                    <td><a class="link-crm" onclick="abrirRegistroCRM('Accounts', '${emp.id}')">${emp.nome}</a></td>
+                    <td>${emp.contato_persistido_nome || 'Nenhum contato'} ${emailBtn}</td>
+                    <td>${emp.telefone || '-'}</td>
+                    <td><span class="tag">${emp.subcategoria || '-'}</span></td>
+                </tr>
+            `;
+        }).join("");
+    }
+
+    function aplicarFiltros() {
+        const search = document.getElementById("searchInput").value.toLowerCase().trim();
+        const filtrados = listaEmpresasOriginal.filter(function(emp) {
+            return (emp.nome || "").toLowerCase().includes(search) || (emp.subcategoria || "").toLowerCase().includes(search);
+        });
+        renderResults(filtrados);
+    }
+
     async function carregarEmpresas() {
         if (!currentOppId) return;
-        setStatus("Executando verificação e logs no Deluge...", "loading");
+        setStatus("Executando busca...", "loading");
 
         const reqData = { arguments: JSON.stringify({ oppId: String(currentOppId) }) };
 
@@ -104,20 +145,20 @@
             let output = response.output || (response.details && response.details.output);
             if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
 
-            log("--- RESPOSTA COMPLETA DO DELUGE ---");
-            if (output && output.logs && Array.isArray(output.logs)) {
-                output.logs.forEach(function(line) { log(line); });
-            } else {
-                log("Nenhum log retornado. Output bruto: " + JSON.stringify(output));
+            if (output && output.logs) {
+                output.logs.forEach(function(l) { log(l); });
             }
 
-            if (output && Array.isArray(output.empresas) && output.empresas.length > 0) {
-                setStatus("Match concluído: " + output.empresas.length + " empresas encontradas.", "success");
+            if (output && Array.isArray(output.empresas)) {
+                listaEmpresasOriginal = output.empresas;
+                renderResults(listaEmpresasOriginal);
+                setStatus("Match concluído com sucesso.", "success");
             } else {
-                setStatus("Execução finalizada com 0 empresas. Analise o log abaixo.", "error");
+                renderResults([]);
+                setStatus("Nenhuma empresa encontrada.", "error");
             }
         } catch (error) {
-            log("ERRO AO EXECUTAR FUNCTION: " + JSON.stringify(error));
+            log("ERRO NA EXECUÇÃO: " + JSON.stringify(error));
             setStatus("Erro grave de execução.", "error");
         }
     }
@@ -129,7 +170,6 @@
         }
         ZOHO.embeddedApp.on("PageLoad", function(data) {
             currentOppId = data && data.EntityId ? data.EntityId : null;
-            log("Widget v4.8 Inicializado na Oportunidade ID: " + currentOppId);
             if (currentOppId) carregarEmpresas();
         });
         ZOHO.embeddedApp.init();
