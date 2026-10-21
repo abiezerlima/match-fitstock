@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock - v5.4 Produção</title>
+    <title>Match Fitstock - v5.6 Debug</title>
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -33,6 +33,7 @@
         .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px; }
         .action-group { display: flex; gap: 5px; align-items: center; }
         .btn-action { background: #2563eb; color: #fff; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .debug { margin-top: 16px; background: #0f172a; color: #38bdf8; border-radius: 8px; padding: 14px; font-family: Consolas, Monaco, monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; max-height: 350px; overflow-y: auto; }
     </style>
 </head>
 <body>
@@ -40,7 +41,7 @@
     <div class="header">
         <div class="header-top">
             <div>
-                <h1>Match Fitstock (v5.4)</h1>
+                <h1>Match Fitstock (v5.6 Debug)</h1>
                 <p>Mapeamento de inteligência de mercado e oportunidades.</p>
             </div>
         </div>
@@ -72,6 +73,11 @@
             </table>
         </div>
     </div>
+
+    <div class="debug">
+        <div style="color: #fff; font-weight: 700; margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px;">Console de Logs Backend</div>
+        <div id="debug">Carregando...</div>
+    </div>
 </div>
 
 <script>
@@ -79,6 +85,11 @@
     let currentOppId = null;
     let contextData = null;
     let listaEmpresasOriginal = [];
+
+    function log(message) {
+        const time = new Date().toLocaleTimeString("pt-BR");
+        document.getElementById("debug").textContent += "\n[" + time + "] " + message;
+    }
 
     function setStatus(message, type) {
         const el = document.getElementById("status");
@@ -131,33 +142,6 @@
         renderResults(filtrados);
     }
 
-    async function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
-        if (!contextData) return;
-        setStatus("Criando negociação no CRM...", "loading");
-
-        const dealName = `[${contextData.produto_nome || 'Oportunidade'}] x ${empresaDestinoNome}`;
-        const payloadCriacao = {
-            "Deal_Name": dealName,
-            "Nome_Produto": contextData.produto_id ? { "id": String(contextData.produto_id) } : null,
-            "Account_Name": { "id": String(empresaDestinoId) }
-        };
-
-        const reqData = { arguments: JSON.stringify({ action: "criar_negocio", payload: payloadCriacao }) };
-
-        try {
-            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-            let output = response.output || (response.details && response.details.output);
-            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
-
-            if (output && output.status === "success" && output.deal_id) {
-                setStatus("Negociação criada com sucesso!", "success");
-                ZOHO.CRM.UI.Record.open({ Entity: "Deals", RecordID: output.deal_id });
-            }
-        } catch (err) {
-            setStatus("Erro ao criar negociação.", "error");
-        }
-    }
-
     async function carregarEmpresas() {
         if (!currentOppId) return;
         setStatus("Executando busca...", "loading");
@@ -169,7 +153,11 @@
             let output = response.output || (response.details && response.details.output);
             if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
 
-            if (output && Array.isArray(output.empresas)) {
+            if (output && output.logs) {
+                output.logs.forEach(function(l) { log(l); });
+            }
+
+            if (output && Array.isArray(output.empresas) && output.empresas.length > 0) {
                 contextData = output;
                 listaEmpresasOriginal = output.empresas;
                 renderResults(listaEmpresasOriginal);
@@ -179,6 +167,7 @@
                 setStatus("Nenhuma empresa encontrada.", "error");
             }
         } catch (error) {
+            log("ERRO GRAVE NA EXECUÇÃO: " + JSON.stringify(error));
             setStatus("Erro grave de execução.", "error");
         }
     }
@@ -190,6 +179,7 @@
         }
         ZOHO.embeddedApp.on("PageLoad", function(data) {
             currentOppId = data && data.EntityId ? data.EntityId : null;
+            log("Widget v5.6 inicializado na Opp ID: " + currentOppId);
             if (currentOppId) carregarEmpresas();
         });
         ZOHO.embeddedApp.init();
