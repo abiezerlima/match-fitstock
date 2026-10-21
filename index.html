@@ -519,10 +519,11 @@
 
         setStatus("Registrando inteligência...", "loading");
 
+        const payload = { empresa_id: empresaId, produto_id: contextData.produto_id, status_uso: statusUso, opp_id: currentOppId, contato_id: contatoId };
         const reqData = {
             arguments: JSON.stringify({
                 action: "registrar_uso",
-                payload: { empresa_id: empresaId, produto_id: contextData.produto_id, status_uso: statusUso, opp_id: currentOppId, contato_id: contatoId }
+                payload: payload
             })
         };
 
@@ -548,10 +549,11 @@
 
         setStatus("Removendo empresa...", "loading");
 
+        const payload = { empresa_id: empresaId, opp_id: currentOppId };
         const reqData = {
             arguments: JSON.stringify({
                 action: "remover_empresa",
-                payload: { empresa_id: empresaId, opp_id: currentOppId }
+                payload: payload
             })
         };
 
@@ -653,7 +655,7 @@
         }
     }
 
-    /* BUSCA AVANÇADA DINÂMICA COMPATÍVEL COM NOME E SOBRENOME EM CONTACTS */
+    /* BUSCA AVANÇADA DINÂMICA */
     const buscaAvancada = {
         modulo: null,
         contexto: null,
@@ -736,7 +738,12 @@
         const modulo = buscaAvancada.modulo;
         if (buscaAvancada.campos[modulo]) return;
 
-        const reqData = { arguments: JSON.stringify({ action: "obter_campos", payload: { modulo: modulo } }) };
+        const reqData = { 
+            arguments: JSON.stringify({ 
+                action: "obter_campos", 
+                payload: { modulo: modulo } 
+            }) 
+        };
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
             let output = response.output || (response.details && response.details.output);
@@ -891,17 +898,7 @@
         }
 
         const textoLivre = document.getElementById("buscaTextoLivre").value.trim();
-        let filtrosValidos = filtrosAtivos.filter(f => f && f.campo && f.operador && f.valor);
-
-        // Se estiver buscando em Contacts e houver texto livre, insere filtro dinâmico por First_Name / Full_Name
-        if (buscaAvancada.modulo === "Contacts" && textoLivre && !filtrosValidos.length) {
-            filtrosValidos.push({
-                campo: "First_Name",
-                operador: "starts_with",
-                valor: textoLivre,
-                valor2: ""
-            });
-        }
+        const filtrosValidos = filtrosAtivos.filter(f => f && f.campo && f.operador && f.valor);
 
         const payload = {
             modulo: buscaAvancada.modulo,
@@ -914,7 +911,13 @@
         btnMais.disabled = true;
         btnMais.textContent = "Carregando...";
 
-        const reqData = { arguments: JSON.stringify({ action: "buscar_dinamico", payload: payload }) };
+        const reqData = { 
+            arguments: JSON.stringify({ 
+                action: "buscar_dinamico", 
+                payload: payload 
+            }) 
+        };
+
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
             let output = response.output || (response.details && response.details.output);
@@ -992,10 +995,11 @@
         if (!empresaId) return;
         setStatus("Adicionando empresa...", "loading");
 
+        const payload = { empresa_id: empresaId, opp_id: currentOppId };
         const reqData = {
             arguments: JSON.stringify({
                 action: "adicionar_empresa",
-                payload: { empresa_id: empresaId, opp_id: currentOppId }
+                payload: payload
             })
         };
 
