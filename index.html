@@ -227,6 +227,101 @@
             white-space: pre-wrap;
             word-break: break-word;
         }
+
+        /* --- ESTILOS BLOCO 1 (BUSCA AVANÇADA) --- */
+        .busca-modal {
+            max-width: 640px;
+        }
+        .busca-tabs-info {
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+        .busca-texto-livre {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+        .filtros-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 10px;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+        .filtro-linha {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 6px;
+            align-items: center;
+        }
+        .filtro-linha select, .filtro-linha input {
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            font-size: 12px;
+            width: 100%;
+        }
+        .filtro-remover {
+            background: #f3f4f6;
+            color: #9ca3af;
+            border: 1px solid #e5e7eb;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            padding: 6px 8px;
+        }
+        .filtro-remover:hover { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+        .btn-add-filtro {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px dashed #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+        .btn-add-filtro:hover { background: #e2e8f0; }
+        .busca-resultados {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .busca-resultado-item {
+            padding: 9px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+        }
+        .busca-resultado-item:hover { background: #f8fafc; }
+        .busca-resultado-item:last-child { border-bottom: none; }
+        .busca-resultado-nome { font-weight: 600; color: #1e293b; }
+        .busca-resultado-sub { font-size: 11px; color: #64748b; }
+        .busca-vazio { padding: 20px; text-align: center; color: #94a3b8; font-size: 13px; }
+        .btn-carregar-mais {
+            width: 100%;
+            background: #eff6ff;
+            color: #1e40af;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .btn-carregar-mais:hover { background: #dbeafe; }
+        .btn-carregar-mais:disabled { opacity: 0.5; cursor: default; }
     </style>
 </head>
 <body>
@@ -237,7 +332,8 @@
                 <h1>Match Fitstock (v4.0)</h1>
                 <p>Mapeamento de inteligência de mercado, gestão de empresas e criação de oportunidades.</p>
             </div>
-            <button class="btn-add-empresa" onclick="abrirModalAdicionar()">
+            <!-- Botão modificado para abrir busca avançada -->
+            <button class="btn-add-empresa" onclick="abrirBuscaAvancada('empresa')">
                 + Adicionar Empresa
             </button>
         </div>
@@ -286,7 +382,7 @@
     </div>
 </div>
 
-<!-- MODAL ADICIONAR EMPRESA -->
+<!-- MODAL ADICIONAR EMPRESA (MANTIDO PARA COMPATIBILIDADE) -->
 <div id="modalAdd" class="modal-overlay">
     <div class="modal">
         <h3>Adicionar Empresa Sugerida</h3>
@@ -297,6 +393,31 @@
         <div class="modal-buttons">
             <button class="btn-delete" onclick="fecharModalAdicionar()">Cancelar</button>
             <button class="btn-action" onclick="confirmarAdicionarEmpresa()">Adicionar</button>
+        </div>
+    </div>
+</div>
+
+<!-- BLOCO 2 — HTML MODAL BUSCA AVANÇADA -->
+<div id="modalBuscaAvancada" class="modal-overlay">
+    <div class="modal busca-modal">
+        <h3 id="buscaAvancadaTitulo">Buscar</h3>
+        <p id="buscaAvancadaInfo" class="busca-tabs-info"></p>
+
+        <input type="text" id="buscaTextoLivre" class="busca-texto-livre"
+               placeholder="Buscar por nome..." oninput="debounceBuscaAvancada()">
+
+        <div id="filtrosContainer" class="filtros-container"></div>
+        <button class="btn-add-filtro" onclick="adicionarLinhaFiltro()">+ Adicionar filtro por campo</button>
+
+        <div id="buscaResultados" class="busca-resultados">
+            <div class="busca-vazio">Digite algo ou adicione um filtro para buscar.</div>
+        </div>
+        <button id="btnCarregarMais" class="btn-carregar-mais" style="display:none;" onclick="executarBuscaAvancada(false)">
+            Carregar mais
+        </button>
+
+        <div class="modal-buttons">
+            <button class="btn-delete" onclick="fecharBuscaAvancada()">Fechar</button>
         </div>
     </div>
 </div>
@@ -339,6 +460,7 @@
         ZOHO.CRM.UI.Record.open({ Entity: entity, RecordID: recordId });
     }
 
+    /* renderResults() ajustado para a nova estrutura com botão "Trocar" e input hidden */
     function renderResults(empresas) {
         if (!empresas || !Array.isArray(empresas) || empresas.length === 0) {
             resultsBody.innerHTML = `
@@ -353,19 +475,6 @@
         countElement.textContent = empresas.length === 1 ? "1 empresa" : empresas.length + " empresas";
 
         resultsBody.innerHTML = empresas.map(function(empresa) {
-            let optionsHtml = "";
-            let emailContatoAtivo = "";
-
-            if (empresa.contatos && empresa.contatos.length > 0) {
-                optionsHtml = empresa.contatos.map(function(ct) {
-                    const isSelected = (empresa.contato_persistido === ct.id) ? "selected" : "";
-                    if (isSelected) emailContatoAtivo = ct.email;
-                    return `<option value="${ct.id}" data-nome="${escapeHtml(ct.nome)}" data-email="${escapeHtml(ct.email)}" ${isSelected}>${escapeHtml(ct.nome)}</option>`;
-                }).join("");
-            } else {
-                optionsHtml = `<option value="">Nenhum contato cadastrado</option>`;
-            }
-
             const statusClassUsa = empresa.status_persistido === "Usa" ? "active" : "";
             const statusClassNaoUsa = empresa.status_persistido === "Não Usa" ? "active" : "";
 
@@ -378,7 +487,9 @@
                 badgeHtml = `<span id="badge_${empresa.id}" class="status-badge" style="display:none;"></span>`;
             }
 
-            const emailBtn = emailContatoAtivo ? `<a class="link-email" href="mailto:${escapeHtml(emailContatoAtivo)}" title="Enviar e-mail para ${escapeHtml(emailContatoAtivo)}">✉️ Email</a>` : `<span id="email_link_${empresa.id}"></span>`;
+            const emailBtn = empresa.contato_persistido_email 
+                ? `<a class="link-email" href="mailto:${escapeHtml(empresa.contato_persistido_email)}" title="Enviar e-mail">✉️ Email</a>` 
+                : `<span id="email_link_${empresa.id}"></span>`;
 
             return `
                 <tr>
@@ -388,10 +499,15 @@
                         </a>
                     </td>
                     <td>
-                        <div style="display:flex; align-items:center; gap:4px;">
-                            <select class="contact-select" id="select_contact_${empresa.id}" onchange="atualizarLinkEmail('${empresa.id}')">
-                                ${optionsHtml}
-                            </select>
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <input type="hidden" id="select_contact_${empresa.id}" value="${empresa.contato_persistido || ''}">
+                            <span id="contact_label_${empresa.id}" style="font-size:12px;">
+                                ${empresa.contato_persistido_nome ? escapeHtml(empresa.contato_persistido_nome) : 'Nenhum contato selecionado'}
+                            </span>
+                            <button class="btn-action" style="padding:4px 8px; font-size:11px;"
+                                onclick="abrirBuscaAvancada('contato', '${empresa.id}', '${escapeHtml(empresa.nome)}')">
+                                Trocar
+                            </button>
                             ${emailBtn}
                         </div>
                     </td>
@@ -427,7 +543,7 @@
         const statusVal = document.getElementById("statusFilter").value;
 
         const filtrados = listaEmpresasOriginal.filter(function(emp) {
-            const matchSearch = emp.nome.toLowerCase().includes(search) || emp.subcategoria.toLowerCase().includes(search);
+            const matchSearch = (emp.nome || "").toLowerCase().includes(search) || (emp.subcategoria || "").toLowerCase().includes(search);
             let matchStatus = true;
             if (statusVal === "Usa") matchStatus = emp.status_persistido === "Usa";
             else if (statusVal === "Não Usa") matchStatus = emp.status_persistido === "Não Usa";
@@ -624,6 +740,314 @@
             }
         } catch (error) {
             setStatus("Erro ao carregar dados.", "error");
+        }
+    }
+
+    /* --- BLOCO 3 (JS BUSCA AVANÇADA) --- */
+    const buscaAvancada = {
+        modulo: null,            // "Accounts" | "Contacts"
+        contexto: null,          // "empresa" | "contato"
+        empresaLinhaId: null,    // id da empresa da linha, quando contexto === "contato"
+        campos: { Accounts: null, Contacts: null }, // cache de metadados por módulo
+        pagina: 1,
+        registros: [],
+        temMais: false,
+        debounceTimer: null
+    };
+
+    function abrirBuscaAvancada(contexto, empresaLinhaId, empresaLinhaNome) {
+        buscaAvancada.contexto = contexto;
+        buscaAvancada.modulo = (contexto === "empresa") ? "Accounts" : "Contacts";
+        buscaAvancada.empresaLinhaId = empresaLinhaId || null;
+        buscaAvancada.pagina = 1;
+        buscaAvancada.registros = [];
+        buscaAvancada.temMais = false;
+
+        document.getElementById("buscaAvancadaTitulo").textContent =
+            contexto === "empresa" ? "Buscar Empresa (Accounts)" : "Buscar Contato (Contacts)";
+        document.getElementById("buscaAvancadaInfo").textContent =
+            contexto === "contato" && empresaLinhaNome
+                ? "Trocando o contato da empresa: " + empresaLinhaNome + ". Use os filtros para restringir por qualquer campo de Contatos."
+                : "Use os filtros para restringir por qualquer campo de " + (contexto === "empresa" ? "Empresas" : "Contatos") + ".";
+
+        document.getElementById("buscaTextoLivre").value = "";
+        document.getElementById("filtrosContainer").innerHTML = "";
+
+        // Reset filtros ativos locais
+        filtrosAtivos = [];
+
+        document.getElementById("modalBuscaAvancada").style.display = "flex";
+
+        carregarCamposBuscaAvancada().then(function() {
+            if (contexto === "contato" && empresaLinhaNome) {
+                adicionarLinhaFiltro("Account_Name", "starts_with", empresaLinhaNome);
+            }
+            executarBuscaAvancada(true);
+        });
+    }
+
+    function fecharBuscaAvancada() {
+        document.getElementById("modalBuscaAvancada").style.display = "none";
+    }
+
+    async function carregarCamposBuscaAvancada() {
+        const modulo = buscaAvancada.modulo;
+        if (buscaAvancada.campos[modulo]) return; // já em cache
+
+        const reqData = { arguments: JSON.stringify({ action: "obter_campos", payload: { modulo: modulo } }) };
+        try {
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            let output = response.output || (response.details && response.details.output);
+            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
+            buscaAvancada.campos[modulo] = (output && Array.isArray(output.campos)) ? output.campos : [];
+        } catch (e) {
+            buscaAvancada.campos[modulo] = [];
+        }
+    }
+
+    function operadoresParaTipo(tipo) {
+        if (["integer","double","currency","bigint","percent"].includes(tipo)) return [["equals","Igual a"], ["between","Entre"]];
+        if (["date","datetime"].includes(tipo)) return [["equals","Igual a"], ["between","Entre"]];
+        if (tipo === "boolean") return [["equals","Igual a"]];
+        if (["picklist","multiselectpicklist"].includes(tipo)) return [["equals","Igual a"]];
+        return [["starts_with","Começa com"], ["equals","Igual a"]]; // texto, email, phone, etc.
+    }
+
+    function inputHtmlParaCampo(idx, campoMeta, operador) {
+        const tipo = campoMeta ? campoMeta.tipo : "text";
+        const isBetween = operador === "between";
+
+        if (campoMeta && (tipo === "picklist" || tipo === "multiselectpicklist")) {
+            const opts = (campoMeta.valores || []).map(v =>
+                `<option value="${escapeHtml(v.valor)}">${escapeHtml(v.label)}</option>`
+            ).join("");
+            return `<select onchange="atualizarValorFiltro(${idx})" id="filtroValor_${idx}">
+                        <option value="">Selecione...</option>${opts}
+                    </select>`;
+        }
+        if (campoMeta && tipo === "boolean") {
+            return `<select onchange="atualizarValorFiltro(${idx})" id="filtroValor_${idx}">
+                        <option value="">Selecione...</option>
+                        <option value="true">Sim</option>
+                        <option value="false">Não</option>
+                    </select>`;
+        }
+        const inputType = (campoMeta && (tipo === "date" || tipo === "datetime")) ? "date"
+            : (campoMeta && ["integer","double","currency","bigint","percent"].includes(tipo)) ? "number"
+            : "text";
+
+        if (isBetween) {
+            return `<div style="display:flex; gap:4px;">
+                        <input type="${inputType}" id="filtroValor_${idx}" placeholder="De" onchange="atualizarValorFiltro(${idx})">
+                        <input type="${inputType}" id="filtroValor2_${idx}" placeholder="Até" onchange="atualizarValorFiltro(${idx})">
+                    </div>`;
+        }
+        return `<input type="${inputType}" id="filtroValor_${idx}" placeholder="Valor" onchange="atualizarValorFiltro(${idx})">`;
+    }
+
+    let filtrosAtivos = []; // [{campo, operador, valor, valor2}]
+
+    function adicionarLinhaFiltro(campoPreSelecionado, operadorPreSelecionado, valorPreSelecionado) {
+        const idx = filtrosAtivos.length;
+        filtrosAtivos.push({
+            campo: campoPreSelecionado || "",
+            operador: operadorPreSelecionado || "",
+            valor: valorPreSelecionado || "",
+            valor2: ""
+        });
+        renderizarFiltroLinha(idx);
+    }
+
+    function removerLinhaFiltro(idx) {
+        filtrosAtivos[idx] = null;
+        const el = document.getElementById("filtroLinha_" + idx);
+        if (el) el.remove();
+    }
+
+    function renderizarFiltroLinha(idx) {
+        const campos = buscaAvancada.campos[buscaAvancada.modulo] || [];
+        const filtro = filtrosAtivos[idx];
+
+        const optsCampo = campos.map(c =>
+            `<option value="${escapeHtml(c.api_name)}" data-tipo="${escapeHtml(c.tipo)}" ${c.api_name === filtro.campo ? "selected" : ""}>${escapeHtml(c.label)}</option>`
+        ).join("");
+
+        const container = document.createElement("div");
+        container.className = "filtro-linha";
+        container.id = "filtroLinha_" + idx;
+        container.innerHTML = `
+            <select id="filtroCampo_${idx}" onchange="trocarCampoFiltro(${idx})">
+                <option value="">Campo...</option>${optsCampo}
+            </select>
+            <select id="filtroOperador_${idx}" onchange="trocarOperadorFiltro(${idx})"></select>
+            <span id="filtroValorWrapper_${idx}"></span>
+            <button class="filtro-remover" onclick="removerLinhaFiltro(${idx})" title="Remover filtro">✕</button>
+        `;
+        document.getElementById("filtrosContainer").appendChild(container);
+
+        if (filtro.campo) {
+            trocarCampoFiltro(idx, filtro.operador, filtro.valor);
+        }
+    }
+
+    function trocarCampoFiltro(idx, operadorForcado, valorForcado) {
+        const selectCampo = document.getElementById("filtroCampo_" + idx);
+        const apiName = selectCampo.value;
+        filtrosAtivos[idx].campo = apiName;
+
+        const campos = buscaAvancada.campos[buscaAvancada.modulo] || [];
+        const campoMeta = campos.find(c => c.api_name === apiName);
+
+        const selectOperador = document.getElementById("filtroOperador_" + idx);
+        const ops = operadoresParaTipo(campoMeta ? campoMeta.tipo : "text");
+        selectOperador.innerHTML = ops.map(([val, label]) =>
+            `<option value="${val}" ${val === operadorForcado ? "selected" : ""}>${label}</option>`
+        ).join("");
+
+        const operadorAtual = selectOperador.value;
+        filtrosAtivos[idx].operador = operadorAtual;
+
+        const wrapper = document.getElementById("filtroValorWrapper_" + idx);
+        wrapper.innerHTML = inputHtmlParaCampo(idx, campoMeta, operadorAtual);
+
+        if (valorForcado) {
+            const valorInput = document.getElementById("filtroValor_" + idx);
+            if (valorInput) valorInput.value = valorForcado;
+            filtrosAtivos[idx].valor = valorForcado;
+        }
+    }
+
+    function trocarOperadorFiltro(idx) {
+        const apiName = filtrosAtivos[idx].campo;
+        const campos = buscaAvancada.campos[buscaAvancada.modulo] || [];
+        const campoMeta = campos.find(c => c.api_name === apiName);
+        const operador = document.getElementById("filtroOperador_" + idx).value;
+        filtrosAtivos[idx].operador = operador;
+
+        const wrapper = document.getElementById("filtroValorWrapper_" + idx);
+        wrapper.innerHTML = inputHtmlParaCampo(idx, campoMeta, operador);
+    }
+
+    function atualizarValorFiltro(idx) {
+        const v1 = document.getElementById("filtroValor_" + idx);
+        const v2 = document.getElementById("filtroValor2_" + idx);
+        if (v1) filtrosAtivos[idx].valor = v1.value;
+        if (v2) filtrosAtivos[idx].valor2 = v2.value;
+    }
+
+    function debounceBuscaAvancada() {
+        clearTimeout(buscaAvancada.debounceTimer);
+        buscaAvancada.debounceTimer = setTimeout(function() {
+            executarBuscaAvancada(true);
+        }, 450);
+    }
+
+    async function executarBuscaAvancada(resetar) {
+        if (resetar) {
+            buscaAvancada.pagina = 1;
+            buscaAvancada.registros = [];
+        } else {
+            buscaAvancada.pagina += 1;
+        }
+
+        const textoLivre = document.getElementById("buscaTextoLivre").value.trim();
+        const filtrosValidos = filtrosAtivos.filter(f => f && f.campo && f.operador && f.valor);
+
+        const payload = {
+            modulo: buscaAvancada.modulo,
+            filtros: filtrosValidos,
+            texto_livre: textoLivre,
+            pagina: buscaAvancada.pagina
+        };
+
+        const btnMais = document.getElementById("btnCarregarMais");
+        btnMais.disabled = true;
+        btnMais.textContent = "Carregando...";
+
+        const reqData = { arguments: JSON.stringify({ action: "buscar_dinamico", payload: payload }) };
+        try {
+            const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            let output = response.output || (response.details && response.details.output);
+            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
+
+            const novos = (output && Array.isArray(output.registros)) ? output.registros : [];
+            buscaAvancada.registros = resetar ? novos : buscaAvancada.registros.concat(novos);
+            buscaAvancada.temMais = !!(output && output.tem_mais);
+
+            renderizarResultadosBusca();
+        } catch (e) {
+            document.getElementById("buscaResultados").innerHTML = `<div class="busca-vazio">Erro ao buscar. Tente novamente.</div>`;
+        } finally {
+            btnMais.disabled = false;
+            btnMais.textContent = "Carregar mais";
+            btnMais.style.display = buscaAvancada.temMais ? "block" : "none";
+        }
+    }
+
+    function renderizarResultadosBusca() {
+        const container = document.getElementById("buscaResultados");
+        if (!buscaAvancada.registros.length) {
+            container.innerHTML = `<div class="busca-vazio">Nenhum registro encontrado.</div>`;
+            return;
+        }
+
+        container.innerHTML = buscaAvancada.registros.map(function(reg) {
+            if (buscaAvancada.modulo === "Accounts") {
+                return `
+                    <div class="busca-resultado-item" onclick='selecionarResultadoBusca(${JSON.stringify(reg)})'>
+                        <span class="busca-resultado-nome">${escapeHtml(reg.nome)}</span>
+                        <span class="busca-resultado-sub">${escapeHtml(reg.cidade || "")} ${reg.telefone ? "· " + escapeHtml(reg.telefone) : ""}</span>
+                    </div>`;
+            }
+            return `
+                <div class="busca-resultado-item" onclick='selecionarResultadoBusca(${JSON.stringify(reg)})'>
+                    <span class="busca-resultado-nome">${escapeHtml(reg.nome)}</span>
+                    <span class="busca-resultado-sub">${escapeHtml(reg.empresa_nome || "")} ${reg.email ? "· " + escapeHtml(reg.email) : ""}</span>
+                </div>`;
+        }).join("");
+    }
+
+    function selecionarResultadoBusca(registro) {
+        if (buscaAvancada.contexto === "empresa") {
+            fecharBuscaAvancada();
+            confirmarAdicionarEmpresaId(registro.id);
+            return;
+        }
+
+        // contexto === "contato": atualiza a linha da tabela sem chamada extra ao backend
+        const empresaId = buscaAvancada.empresaLinhaId;
+        const hiddenInput = document.getElementById("select_contact_" + empresaId);
+        const label = document.getElementById("contact_label_" + empresaId);
+        if (hiddenInput) hiddenInput.value = registro.id;
+        if (label) label.textContent = registro.nome;
+
+        const emailSpan = document.getElementById("email_link_" + empresaId);
+        if (emailSpan) {
+            emailSpan.innerHTML = registro.email
+                ? `<a class="link-email" href="mailto:${escapeHtml(registro.email)}" title="Enviar e-mail">✉️ Email</a>`
+                : "";
+        }
+
+        fecharBuscaAvancada();
+    }
+
+    // Adaptador: reaproveita a action "adicionar_empresa" já existente no backend
+    async function confirmarAdicionarEmpresaId(empresaId) {
+        if (!empresaId) return;
+        setStatus("Adicionando empresa...", "loading");
+
+        const reqData = {
+            arguments: JSON.stringify({
+                action: "adicionar_empresa",
+                payload: { empresa_id: empresaId, opp_id: currentOppId }
+            })
+        };
+
+        try {
+            await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
+            carregarEmpresas();
+        } catch (err) {
+            setStatus("Erro ao adicionar empresa.", "error");
         }
     }
 
