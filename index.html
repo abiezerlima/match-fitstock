@@ -19,6 +19,9 @@
         .status.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
         .status.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
         .status.loading { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+        .debug-toggle { display: inline-block; margin-top: 8px; font-size: 12px; color: #64748b; cursor: pointer; text-decoration: underline; }
+        .debug-box { display: none; margin-top: 8px; padding: 10px; background: #0f172a; color: #cbd5e1; border-radius: 6px; font-family: Consolas, monospace; font-size: 12px; white-space: pre-wrap; max-height: 240px; overflow: auto; }
+        .debug-box.show { display: block; }
         .results { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         .results-header { padding: 14px 18px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
         .results-header h2 { margin: 0; font-size: 15px; font-weight: 600; color: #334155; }
@@ -33,6 +36,7 @@
         .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px; }
         .action-group { display: flex; gap: 5px; align-items: center; }
         .btn-action { background: #2563eb; color: #fff; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        .btn-action:disabled { opacity: 0.5; cursor: default; }
     </style>
 </head>
 <body>
@@ -48,6 +52,8 @@
             <input type="text" id="searchInput" class="filter-input" placeholder="Buscar por nome da empresa ou subcategoria..." oninput="aplicarFiltros()">
         </div>
         <div id="status" class="status loading">Inicializando widget...</div>
+        <span class="debug-toggle" onclick="document.getElementById('debugBox').classList.toggle('show')">Ver log de diagnóstico</span>
+        <div id="debugBox" class="debug-box">(sem logs ainda)</div>
     </div>
 
     <div class="results">
@@ -86,6 +92,35 @@
         el.className = "status " + type;
     }
 
+    // Evita quebra de HTML/JS com aspas e apóstrofos em nomes (ex.: D'Avila)
+    function esc(v) {
+        return String(v == null ? "" : v)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
+    }
+
+    function mostrarLogs(logs) {
+        const lista = Array.isArray(logs) ? logs : [];
+        document.getElementById("debugBox").textContent = lista.length ? lista.join("\n") : "(sem logs)";
+        if (lista.length) { console.log("Match Fitstock logs:\n" + lista.join("\n")); }
+    }
+
+    // Extrai e interpreta o retorno da função Deluge
+    function parseOutput(response) {
+        let output = response && (response.output || (response.details && response.details.output));
+        if (typeof output === "string") {
+            try {
+                output = JSON.parse(output);
+            } catch (e) {
+                throw new Error("Resposta da função não é um JSON válido: " + output.slice(0, 200));
+            }
+        }
+        return output;
+    }
+
     function abrirRegistroCRM(entity, recordId) {
         ZOHO.CRM.UI.Record.open({ Entity: entity, RecordID: recordId });
     }
@@ -103,18 +138,18 @@
         countElement.textContent = empresas.length === 1 ? "1 empresa" : empresas.length + " empresas";
         resultsBody.innerHTML = empresas.map(function(emp) {
             if (!emp || !emp.id) return "";
-            const emailBtn = emp.contato_persistido_email 
-                ? `<a class="link-email" href="mailto:${emp.contato_persistido_email}">✉️ Email</a>` : '';
+            const emailBtn = emp.contato_persistido_email
+                ? `<a class="link-email" href="mailto:${esc(emp.contato_persistido_email)}">✉️ Email</a>` : '';
 
             return `
                 <tr>
-                    <td><a class="link-crm" onclick="abrirRegistroCRM('Accounts', '${emp.id}')">${emp.nome || 'Sem Nome'}</a></td>
-                    <td>${emp.contato_persistido_nome || 'Nenhum contato'} ${emailBtn}</td>
-                    <td>${emp.telefone || '-'}</td>
-                    <td><span class="tag">${emp.subcategoria || '-'}</span></td>
+                    <td><a class="link-crm" data-entity="Accounts" data-id="${esc(emp.id)}">${esc(emp.nome || 'Sem Nome')}</a></td>
+                    <td>${esc(emp.contato_persistido_nome || 'Nenhum contato')} ${emailBtn}</td>
+                    <td>${esc(emp.telefone || '-')}</td>
+                    <td><span class="tag">${esc(emp.subcategoria || '-')}</span></td>
                     <td>
                         <div class="action-group">
-                            <button class="btn-action" onclick="criarNegociacao('${emp.id}', '${emp.nome}')">Criar Negociação</button>
+                            <button class="btn-action" data-action="criar" data-id="${esc(emp.id)}" data-nome="${esc(emp.nome)}">Criar Negociação</button>
                         </div>
                     </td>
                 </tr>
@@ -131,30 +166,46 @@
         renderResults(filtrados);
     }
 
-    async function criarNegociacao(empresaDestinoId, empresaDestinoNome) {
-        if (!contextData) return;
+    async function criarNegociacao(empresaDestinoId, empresaDestinoNome, btn) {
+        if (!contextData || !currentOppId) return;
+        if (btn) btn.disabled = true;
         setStatus("Criando negociação no CRM...", "loading");
 
         const dealName = `[${contextData.produto_nome || 'Oportunidade'}] x ${empresaDestinoNome}`;
         const payloadCriacao = {
             "Deal_Name": dealName,
-            "Nome_Produto": contextData.produto_id ? { "id": String(contextData.produto_id) } : null,
             "Account_Name": { "id": String(empresaDestinoId) }
         };
+        if (contextData.produto_id) {
+            payloadCriacao["Nome_Produto"] = { "id": String(contextData.produto_id) };
+        }
 
-        const reqData = { arguments: JSON.stringify({ action: "criar_negocio", payload: payloadCriacao }) };
+        // oppId é obrigatório: a função Deluge valida o ID antes de olhar a action
+        const reqData = {
+            arguments: JSON.stringify({
+                oppId: String(currentOppId),
+                action: "criar_negocio",
+                payload: payloadCriacao
+            })
+        };
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-            let output = response.output || (response.details && response.details.output);
-            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
+            const output = parseOutput(response);
+            if (output && output.logs) { mostrarLogs(output.logs); }
 
             if (output && output.status === "success" && output.deal_id) {
                 setStatus("Negociação criada com sucesso!", "success");
                 ZOHO.CRM.UI.Record.open({ Entity: "Deals", RecordID: output.deal_id });
+            } else {
+                const motivo = (output && (output.message || output.detalhe)) || "resposta inesperada da função.";
+                setStatus("Erro ao criar negociação: " + motivo, "error");
+                console.log("Falha criar_negocio:", output);
             }
         } catch (err) {
-            setStatus("Erro ao criar negociação.", "error");
+            setStatus("Erro ao criar negociação: " + (err && err.message ? err.message : "falha de execução."), "error");
+        } finally {
+            if (btn) btn.disabled = false;
         }
     }
 
@@ -166,22 +217,51 @@
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
-            let output = response.output || (response.details && response.details.output);
-            if (typeof output === "string") { try { output = JSON.parse(output); } catch(e){} }
+            const output = parseOutput(response);
 
-            if (output && Array.isArray(output.empresas) && output.empresas.length > 0) {
-                contextData = output;
-                listaEmpresasOriginal = output.empresas;
-                renderResults(listaEmpresasOriginal);
-                setStatus("Match concluído com sucesso.", "success");
-            } else {
+            if (!output) {
                 renderResults([]);
-                setStatus("Nenhuma empresa encontrada.", "error");
+                setStatus("A função não retornou dados.", "error");
+                return;
             }
+
+            mostrarLogs(output.logs);
+
+            // Erro vindo do Deluge não deve parecer "lista vazia"
+            if (output.status !== "success") {
+                renderResults([]);
+                setStatus("Erro: " + (output.message || "falha ao carregar empresas."), "error");
+                return;
+            }
+
+            contextData = output;
+            listaEmpresasOriginal = Array.isArray(output.empresas) ? output.empresas : [];
+
+            if (listaEmpresasOriginal.length === 0) {
+                renderResults([]);
+                setStatus("Nenhuma empresa encontrada para as subcategorias do produto.", "error");
+                return;
+            }
+
+            renderResults(listaEmpresasOriginal);
+            setStatus("Match concluído com sucesso.", "success");
         } catch (error) {
-            setStatus("Erro grave de execução.", "error");
+            setStatus("Erro grave de execução: " + (error && error.message ? error.message : "falha desconhecida."), "error");
         }
     }
+
+    // Delegação de eventos (substitui os onclick inline com nomes interpolados)
+    document.getElementById("resultsBody").addEventListener("click", function(ev) {
+        const link = ev.target.closest("a.link-crm");
+        if (link) {
+            abrirRegistroCRM(link.dataset.entity, link.dataset.id);
+            return;
+        }
+        const btn = ev.target.closest("button[data-action='criar']");
+        if (btn) {
+            criarNegociacao(btn.dataset.id, btn.dataset.nome, btn);
+        }
+    });
 
     function registrarZoho() {
         if (typeof ZOHO === "undefined") {
@@ -189,8 +269,13 @@
             return;
         }
         ZOHO.embeddedApp.on("PageLoad", function(data) {
-            currentOppId = data && data.EntityId ? data.EntityId : null;
-            if (currentOppId) carregarEmpresas();
+            const id = data && data.EntityId;
+            currentOppId = Array.isArray(id) ? id[0] : (id || null);
+            if (currentOppId) {
+                carregarEmpresas();
+            } else {
+                setStatus("Não foi possível identificar a Oportunidade.", "error");
+            }
         });
         ZOHO.embeddedApp.init();
     }
