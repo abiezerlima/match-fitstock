@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock - v5.3 Produção</title>
+    <title>Match Fitstock - v5.4 Produção</title>
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
     <style>
         * { box-sizing: border-box; }
@@ -13,7 +13,6 @@
         .header-top { display: flex; justify-content: space-between; align-items: center; }
         .header h1 { margin: 0 0 4px 0; font-size: 20px; font-weight: 700; color: #0f172a; }
         .header p { margin: 0; color: #64748b; font-size: 13px; }
-        .btn-add-empresa { background: #059669; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
         .filter-bar { display: flex; gap: 10px; margin-top: 14px; }
         .filter-input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 13px; }
         .status { margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: 13px; }
@@ -34,7 +33,6 @@
         .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #f1f5f9; color: #475569; font-size: 11px; }
         .action-group { display: flex; gap: 5px; align-items: center; }
         .btn-action { background: #2563eb; color: #fff; border: none; padding: 6px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; font-weight: 600; }
-        .btn-delete { background: #f3f4f6; color: #9ca3af; border: 1px solid #e5e7eb; padding: 6px 8px; border-radius: 5px; cursor: pointer; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -42,7 +40,7 @@
     <div class="header">
         <div class="header-top">
             <div>
-                <h1>Match Fitstock (v5.3)</h1>
+                <h1>Match Fitstock (v5.4)</h1>
                 <p>Mapeamento de inteligência de mercado e oportunidades.</p>
             </div>
         </div>
@@ -104,12 +102,13 @@
 
         countElement.textContent = empresas.length === 1 ? "1 empresa" : empresas.length + " empresas";
         resultsBody.innerHTML = empresas.map(function(emp) {
+            if (!emp || !emp.id) return "";
             const emailBtn = emp.contato_persistido_email 
                 ? `<a class="link-email" href="mailto:${emp.contato_persistido_email}">✉️ Email</a>` : '';
 
             return `
                 <tr>
-                    <td><a class="link-crm" onclick="abrirRegistroCRM('Accounts', '${emp.id}')">${emp.nome}</a></td>
+                    <td><a class="link-crm" onclick="abrirRegistroCRM('Accounts', '${emp.id}')">${emp.nome || 'Sem Nome'}</a></td>
                     <td>${emp.contato_persistido_nome || 'Nenhum contato'} ${emailBtn}</td>
                     <td>${emp.telefone || '-'}</td>
                     <td><span class="tag">${emp.subcategoria || '-'}</span></td>
@@ -126,6 +125,7 @@
     function aplicarFiltros() {
         const search = document.getElementById("searchInput").value.toLowerCase().trim();
         const filtrados = listaEmpresasOriginal.filter(function(emp) {
+            if (!emp) return false;
             return (emp.nome || "").toLowerCase().includes(search) || (emp.subcategoria || "").toLowerCase().includes(search);
         });
         renderResults(filtrados);
