@@ -965,15 +965,14 @@
             fecharBuscaAvancada();
             
             const empresaIdParaAdicionar = (buscaAvancada.modulo === "Accounts") ? registro.id : registro.empresa_id;
-            const contatoIdParaAdicionar = (buscaAvancada.modulo === "Contacts") ? registro.id : null;
-            const contatoNomeParaAdicionar = (buscaAvancada.modulo === "Contacts") ? registro.nome : null;
+            const contatoIdParaAdicionar = (buscaAvancada.modulo === "Contacts") ? registro.id : "";
             
             if (!empresaIdParaAdicionar) {
                 alert("O contato selecionado não possui uma Empresa (Conta) vinculada no CRM.");
                 return;
             }
 
-            confirmarAdicionarEmpresaId(empresaIdParaAdicionar, contatoIdParaAdicionar, contatoNomeParaAdicionar);
+            confirmarAdicionarEmpresaId(empresaIdParaAdicionar, contatoIdParaAdicionar);
             return;
         }
 
@@ -993,11 +992,11 @@
         fecharBuscaAvancada();
     }
 
-    async function confirmarAdicionarEmpresaId(empresaId, contatoId, contatoNome) {
+    async function confirmarAdicionarEmpresaId(empresaId, contatoId) {
         if (!empresaId) return;
-        setStatus("Adicionando empresa e contato...", "loading");
+        setStatus("Adicionando empresa e vinculando contato...", "loading");
 
-        const payload = { empresa_id: empresaId, opp_id: currentOppId, contato_id: contatoId, contato_nome: contatoNome };
+        const payload = { empresa_id: empresaId, opp_id: currentOppId, contato_id: contatoId || "" };
         const reqData = {
             arguments: JSON.stringify({
                 action: "adicionar_empresa",
