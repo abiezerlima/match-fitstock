@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Match Fitstock - v4.0 Produção</title>
+    <title>Match Fitstock - v4.1 Produção</title>
 
     <!-- ZOHO CRM WIDGET SDK -->
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
@@ -304,7 +304,7 @@
     <div class="header">
         <div class="header-top">
             <div>
-                <h1>Match Fitstock (v4.0)</h1>
+                <h1>Match Fitstock (v4.1)</h1>
                 <p>Mapeamento de inteligência de mercado, gestão de empresas e criação de oportunidades.</p>
             </div>
             <button class="btn-add-empresa" onclick="abrirBuscaAvancada('empresa')">
@@ -519,7 +519,7 @@
 
         setStatus("Registrando inteligência...", "loading");
 
-        const payload = { empresa_id: empresaId, produto_id: contextData.produto_id, status_uso: statusUso, opp_id: currentOppId, contato_id: contatoId };
+        const payload = { empresa_id: String(empresaId), produto_id: String(contextData.produto_id), status_uso: statusUso, opp_id: String(currentOppId), contato_id: String(contatoId) };
         const reqData = {
             arguments: JSON.stringify({
                 action: "registrar_uso",
@@ -549,7 +549,7 @@
 
         setStatus("Removendo empresa...", "loading");
 
-        const payload = { empresa_id: empresaId, opp_id: currentOppId };
+        const payload = { empresa_id: String(empresaId), opp_id: String(currentOppId) };
         const reqData = {
             arguments: JSON.stringify({
                 action: "remover_empresa",
@@ -605,11 +605,11 @@
 
         const payloadCriacao = {
             "Deal_Name": dealName,
-            "Nome_Produto": contextData.produto_id ? { "id": contextData.produto_id } : null,
-            "Account_Name": sellerAccountId ? { "id": sellerAccountId } : null,
-            "Contact_Name": sellerContactId ? { "id": sellerContactId } : null,
-            "Empresa_Buyer": buyerAccountId ? { "id": buyerAccountId } : null,
-            "Comprador1": buyerContactId ? { "id": buyerContactId } : null
+            "Nome_Produto": contextData.produto_id ? { "id": String(contextData.produto_id) } : null,
+            "Account_Name": sellerAccountId ? { "id": String(sellerAccountId) } : null,
+            "Contact_Name": sellerContactId ? { "id": String(sellerContactId) } : null,
+            "Empresa_Buyer": buyerAccountId ? { "id": String(buyerAccountId) } : null,
+            "Comprador1": buyerContactId ? { "id": String(buyerContactId) } : null
         };
 
         const reqData = {
@@ -634,7 +634,7 @@
         if (!currentOppId) return;
 
         setStatus("Buscando empresas compatíveis...", "loading");
-        const reqData = { arguments: JSON.stringify({ oppId: currentOppId }) };
+        const reqData = { arguments: JSON.stringify({ oppId: String(currentOppId) }) };
 
         try {
             const response = await ZOHO.CRM.FUNCTIONS.execute(FUNCTION_API_NAME, reqData);
@@ -968,7 +968,7 @@
             const contatoIdParaAdicionar = (buscaAvancada.modulo === "Contacts") ? registro.id : "";
             
             if (!empresaIdParaAdicionar) {
-                alert("O contato selecionado não possui uma Empresa (Conta) vinculada no CRM.");
+                alert("O contato selecionado não possui uma Empresa vinculada no CRM.");
                 return;
             }
 
@@ -996,7 +996,11 @@
         if (!empresaId) return;
         setStatus("Adicionando empresa e vinculando contato...", "loading");
 
-        const payload = { empresa_id: empresaId, opp_id: currentOppId, contato_id: contatoId || "" };
+        const payload = { 
+            empresa_id: String(empresaId), 
+            opp_id: String(currentOppId), 
+            contato_id: contatoId ? String(contatoId) : "" 
+        };
         const reqData = {
             arguments: JSON.stringify({
                 action: "adicionar_empresa",
@@ -1026,7 +1030,7 @@
         ZOHO.embeddedApp.init();
     }
 
-    log("Widget v4.0 (Produção) carregado.");
+    log("Widget v4.1 (Produção) carregado.");
     registrarZoho();
 </script>
 </body>
