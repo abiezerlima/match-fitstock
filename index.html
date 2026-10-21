@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Match Fitstock - v4.0 Produção</title>
+
+    <!-- ZOHO CRM WIDGET SDK -->
     <script src="https://live.zwidgets.com/js-sdk/1.2/ZohoEmbededAppSDK.min.js"></script>
+
     <style>
         * { box-sizing: border-box; }
         body {
@@ -216,6 +219,7 @@
             white-space: pre-wrap;
             word-break: break-word;
         }
+
         .busca-modal { max-width: 640px; }
         .busca-tabs-container {
             display: flex;
@@ -961,13 +965,15 @@
             fecharBuscaAvancada();
             
             const empresaIdParaAdicionar = (buscaAvancada.modulo === "Accounts") ? registro.id : registro.empresa_id;
+            const contatoIdParaAdicionar = (buscaAvancada.modulo === "Contacts") ? registro.id : null;
+            const contatoNomeParaAdicionar = (buscaAvancada.modulo === "Contacts") ? registro.nome : null;
             
             if (!empresaIdParaAdicionar) {
                 alert("O contato selecionado não possui uma Empresa (Conta) vinculada no CRM.");
                 return;
             }
 
-            confirmarAdicionarEmpresaId(empresaIdParaAdicionar);
+            confirmarAdicionarEmpresaId(empresaIdParaAdicionar, contatoIdParaAdicionar, contatoNomeParaAdicionar);
             return;
         }
 
@@ -987,11 +993,11 @@
         fecharBuscaAvancada();
     }
 
-    async function confirmarAdicionarEmpresaId(empresaId) {
+    async function confirmarAdicionarEmpresaId(empresaId, contatoId, contatoNome) {
         if (!empresaId) return;
-        setStatus("Adicionando empresa...", "loading");
+        setStatus("Adicionando empresa e contato...", "loading");
 
-        const payload = { empresa_id: empresaId, opp_id: currentOppId };
+        const payload = { empresa_id: empresaId, opp_id: currentOppId, contato_id: contatoId, contato_nome: contatoNome };
         const reqData = {
             arguments: JSON.stringify({
                 action: "adicionar_empresa",
